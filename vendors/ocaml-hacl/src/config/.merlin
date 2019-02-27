@@ -1,0 +1,14 @@
+EXCLUDE_QUERY_DIR
+B /Users/Brian/.opam/liquidity/lib/base
+B /Users/Brian/.opam/liquidity/lib/base/caml
+B /Users/Brian/.opam/liquidity/lib/base/shadow_stdlib
+B /Users/Brian/.opam/liquidity/lib/sexplib0
+B /Users/Brian/.opam/liquidity/lib/stdio
+B ../../../../_build/default/vendors/ocaml-hacl/src/config/.discover.eobjs
+S /Users/Brian/.opam/liquidity/lib/base
+S /Users/Brian/.opam/liquidity/lib/base/caml
+S /Users/Brian/.opam/liquidity/lib/base/shadow_stdlib
+S /Users/Brian/.opam/liquidity/lib/sexplib0
+S /Users/Brian/.opam/liquidity/lib/stdio
+S .
+FLG -w @a-4-29-40-41-42-44-45-48-58-59-60-40 -strict-sequence -strict-formats -short-paths -keep-locs

@@ -1,0 +1,8 @@
+# helloTezos.tz
+# Taken from Camelcase Tutorial of Michelson
+parameter unit;
+storage string;
+code {DROP;
+      PUSH string "Hello Tezos!";
+      NIL operation; PAIR;};
+

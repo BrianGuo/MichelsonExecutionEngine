@@ -1,0 +1,15 @@
+lib: [
+  "_build/install/default/lib/ocplib-json-typed-browser/META" {"META"}
+  "_build/install/default/lib/ocplib-json-typed-browser/json_repr_browser.cmi" {"json_repr_browser.cmi"}
+  "_build/install/default/lib/ocplib-json-typed-browser/json_repr_browser.cmt" {"json_repr_browser.cmt"}
+  "_build/install/default/lib/ocplib-json-typed-browser/json_repr_browser.cmti" {"json_repr_browser.cmti"}
+  "_build/install/default/lib/ocplib-json-typed-browser/json_repr_browser.cmx" {"json_repr_browser.cmx"}
+  "_build/install/default/lib/ocplib-json-typed-browser/json_repr_browser.ml" {"json_repr_browser.ml"}
+  "_build/install/default/lib/ocplib-json-typed-browser/json_repr_browser.mli" {"json_repr_browser.mli"}
+  "_build/install/default/lib/ocplib-json-typed-browser/ocplib-json-typed-browser.dune" {"ocplib-json-typed-browser.dune"}
+  "_build/install/default/lib/ocplib-json-typed-browser/ocplib_json_typed_browser.a" {"ocplib_json_typed_browser.a"}
+  "_build/install/default/lib/ocplib-json-typed-browser/ocplib_json_typed_browser.cma" {"ocplib_json_typed_browser.cma"}
+  "_build/install/default/lib/ocplib-json-typed-browser/ocplib_json_typed_browser.cmxa" {"ocplib_json_typed_browser.cmxa"}
+  "_build/install/default/lib/ocplib-json-typed-browser/ocplib_json_typed_browser.cmxs" {"ocplib_json_typed_browser.cmxs"}
+  "_build/install/default/lib/ocplib-json-typed-browser/opam" {"opam"}
+]

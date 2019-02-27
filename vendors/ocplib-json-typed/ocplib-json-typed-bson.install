@@ -1,0 +1,15 @@
+lib: [
+  "_build/install/default/lib/ocplib-json-typed-bson/META" {"META"}
+  "_build/install/default/lib/ocplib-json-typed-bson/json_repr_bson.cmi" {"json_repr_bson.cmi"}
+  "_build/install/default/lib/ocplib-json-typed-bson/json_repr_bson.cmt" {"json_repr_bson.cmt"}
+  "_build/install/default/lib/ocplib-json-typed-bson/json_repr_bson.cmti" {"json_repr_bson.cmti"}
+  "_build/install/default/lib/ocplib-json-typed-bson/json_repr_bson.cmx" {"json_repr_bson.cmx"}
+  "_build/install/default/lib/ocplib-json-typed-bson/json_repr_bson.ml" {"json_repr_bson.ml"}
+  "_build/install/default/lib/ocplib-json-typed-bson/json_repr_bson.mli" {"json_repr_bson.mli"}
+  "_build/install/default/lib/ocplib-json-typed-bson/ocplib-json-typed-bson.dune" {"ocplib-json-typed-bson.dune"}
+  "_build/install/default/lib/ocplib-json-typed-bson/ocplib_json_typed_bson.a" {"ocplib_json_typed_bson.a"}
+  "_build/install/default/lib/ocplib-json-typed-bson/ocplib_json_typed_bson.cma" {"ocplib_json_typed_bson.cma"}
+  "_build/install/default/lib/ocplib-json-typed-bson/ocplib_json_typed_bson.cmxa" {"ocplib_json_typed_bson.cmxa"}
+  "_build/install/default/lib/ocplib-json-typed-bson/ocplib_json_typed_bson.cmxs" {"ocplib_json_typed_bson.cmxs"}
+  "_build/install/default/lib/ocplib-json-typed-bson/opam" {"opam"}
+]

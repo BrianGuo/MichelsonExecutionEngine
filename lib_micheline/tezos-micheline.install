@@ -1,0 +1,31 @@
+lib: [
+  "_build/install/default/lib/tezos-micheline/META" {"META"}
+  "_build/install/default/lib/tezos-micheline/micheline.ml" {"micheline.ml"}
+  "_build/install/default/lib/tezos-micheline/micheline.mli" {"micheline.mli"}
+  "_build/install/default/lib/tezos-micheline/micheline_parser.ml" {"micheline_parser.ml"}
+  "_build/install/default/lib/tezos-micheline/micheline_parser.mli" {"micheline_parser.mli"}
+  "_build/install/default/lib/tezos-micheline/micheline_printer.ml" {"micheline_printer.ml"}
+  "_build/install/default/lib/tezos-micheline/micheline_printer.mli" {"micheline_printer.mli"}
+  "_build/install/default/lib/tezos-micheline/opam" {"opam"}
+  "_build/install/default/lib/tezos-micheline/tezos-micheline.dune" {"tezos-micheline.dune"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.a" {"tezos_micheline.a"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.cma" {"tezos_micheline.cma"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.cmi" {"tezos_micheline.cmi"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.cmt" {"tezos_micheline.cmt"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.cmx" {"tezos_micheline.cmx"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.cmxa" {"tezos_micheline.cmxa"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.cmxs" {"tezos_micheline.cmxs"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline.ml" {"tezos_micheline.ml"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline.cmi" {"tezos_micheline__Micheline.cmi"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline.cmt" {"tezos_micheline__Micheline.cmt"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline.cmti" {"tezos_micheline__Micheline.cmti"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline.cmx" {"tezos_micheline__Micheline.cmx"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_parser.cmi" {"tezos_micheline__Micheline_parser.cmi"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_parser.cmt" {"tezos_micheline__Micheline_parser.cmt"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_parser.cmti" {"tezos_micheline__Micheline_parser.cmti"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_parser.cmx" {"tezos_micheline__Micheline_parser.cmx"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_printer.cmi" {"tezos_micheline__Micheline_printer.cmi"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_printer.cmt" {"tezos_micheline__Micheline_printer.cmt"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_printer.cmti" {"tezos_micheline__Micheline_printer.cmti"}
+  "_build/install/default/lib/tezos-micheline/tezos_micheline__Micheline_printer.cmx" {"tezos_micheline__Micheline_printer.cmx"}
+]
