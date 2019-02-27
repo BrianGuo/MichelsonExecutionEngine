@@ -10,3 +10,5 @@ Todos:
 - Have not yet verified that signatures/hashing works as intended.
 - Stack trace not pretty printed in a desirable way.
 - Build out API Docs
+- File structure reorganization
+- build guide (add to this readme?)
