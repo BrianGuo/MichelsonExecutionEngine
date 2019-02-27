@@ -26,102 +26,19 @@ open Tezos_stdlib
 open Tezos_data_encoding
 open Data_encoding
 open Hacl
+open Tezos_error_monad.Error_monad
 
-let size = Sign.bytes
-let of_bytes_opt s =
-  if MBytes.length s = size then Some s else None
-let to_bytes x = x
 
 module Public_key_hash = struct
-
-  open Blake2
-  type t = Blake2b.hash
-
-  type Base58.data +=
-  | Data of t
-
-  let name = "Ed25519.Public_key_hash"
-  let title = "An Ed25519 public key hash"
-
-  let size = 20
-
-  let of_string_opt s =
-    if String.length s <> size then
-      None
-    else
-      Some (Blake2b.Hash (MBytes.of_string s))
-
-  let to_string (Blake2b.Hash h) = MBytes.to_string h
-  let to_bytes (Blake2b.Hash h) = h
-
-  let of_bytes_opt b =
-    if MBytes.length b <> size then
-      None
-    else
-      Some (Blake2b.Hash b)
-  let of_bytes_exn b =
-    match of_bytes_opt b with
-    | None ->
-        let msg =
-          Printf.sprintf "%s.of_bytes: wrong string size (%d)"
-            name (MBytes.length b) in
-        raise (Invalid_argument msg)
-    | Some h -> h
-
-  let b58check_encoding =
-    Base58.register_encoding
-      ~prefix: Base58.Prefix.ed25519_public_key_hash
-      ~length: size
-      ~wrap: (fun s -> Data s)
-      ~of_raw: of_string_opt
-      ~to_raw: to_string
-
-  let of_b58check_opt s =
-    Base58.simple_decode b58check_encoding s
-
-  let of_b58check_exn s =
-    match of_b58check_opt s with
-    | Some x -> x
-    | None -> Format.kasprintf Pervasives.failwith "Unexpected data (%s)" name
-
-  let raw_encoding =
-    let open Data_encoding in
-    conv to_bytes of_bytes_exn (Fixed.bytes size)
-
-  let hash_bytes ?key l =
-    let state = Blake2b.init ?key size in
-    List.iter (fun b -> Blake2b.update state b) l ;
-    Blake2b.final state
-
-  let hash =
-    if Compare.Int.(size >= 8) then
-      fun h -> Int64.to_int (MBytes.get_int64 (to_bytes h) 0)
-    else if Compare.Int.(size >= 4) then
-      fun h -> Int32.to_int (MBytes.get_int32 (to_bytes h) 0)
-    else
-      fun h ->
-        let r = ref 0 in
-        let h = to_bytes h in
-        for i = 0 to size - 1 do
-          r := MBytes.get_uint8 h i + 8 * !r
-        done ;
-        !r
-
-  let to_b58check s = Base58.simple_encode b58check_encoding s
-
-  let encoding =
-    let open Data_encoding in
-    splitted
-      ~binary:
-        (obj1 (req name raw_encoding))
-      ~json:
-        (def name
-           ~title: (title ^ " (Base58Check-encoded)") @@
-         conv
-           to_b58check
-           (Data_encoding.Json.wrap_error of_b58check_exn)
-           string)
-
+  include Blake2b.Make(Base58)(struct
+      let name = "Ed25519.Public_key_hash"
+      let title = "An Ed25519 public key hash"
+      let b58check_prefix = Base58.Prefix.ed25519_public_key_hash
+      let size = Some 20
+    end)
+  module Logging = struct
+    let tag = Tag.def ~doc:title name pp
+  end
 end
 
 module Public_key = struct
@@ -198,4 +115,199 @@ module Public_key = struct
              string)
 end
 
+module Secret_key = struct
+
+  type t = secret Sign.key
+
+  let name = "Ed25519.Secret_key"
+  let title = "An Ed25519 secret key"
+
+  let size = Sign.skbytes
+
+  let to_bytes sk =
+    let buf = MBytes.create Sign.skbytes in
+    Sign.blit_to_bytes sk buf ;
+    buf
+
+  let of_bytes_opt s =
+    if MBytes.length s > 64 then None
+    else
+      let sk = MBytes.create Sign.skbytes in
+      MBytes.blit s 0 sk 0 Sign.skbytes ;
+      Some (Sign.unsafe_sk_of_bytes sk)
+
+  let to_string s = MBytes.to_string (to_bytes s)
+  let of_string_opt s = of_bytes_opt (MBytes.of_string s)
+
+  let to_public_key = Sign.neuterize
+
+  type Base58.data +=
+    | Data of t
+
+  let b58check_encoding =
+    Base58.register_encoding
+      ~prefix: Base58.Prefix.ed25519_seed
+      ~length: size
+      ~to_raw: (fun sk -> MBytes.to_string (Sign.unsafe_to_bytes sk))
+      ~of_raw: (fun buf ->
+          if String.length buf <> Sign.skbytes then None
+          else Some (Sign.unsafe_sk_of_bytes (MBytes.of_string buf)))
+      ~wrap: (fun sk -> Data sk)
+
+  (* Legacy NaCl secret key encoding. Used to store both sk and pk. *)
+  let secret_key_encoding =
+    Base58.register_encoding
+      ~prefix: Base58.Prefix.ed25519_secret_key
+      ~length: Sign.(skbytes + pkbytes)
+      ~to_raw: (fun sk ->
+          let pk = Sign.neuterize sk in
+          let buf = MBytes.create Sign.(skbytes + pkbytes) in
+          Sign.blit_to_bytes sk buf ;
+          Sign.blit_to_bytes pk ~pos:Sign.skbytes buf ;
+          MBytes.to_string buf)
+      ~of_raw: (fun buf ->
+          if String.length buf <> Sign.(skbytes + pkbytes) then None
+          else
+            let sk = MBytes.create Sign.skbytes in
+            MBytes.blit_of_string buf 0 sk 0 Sign.skbytes ;
+            Some (Sign.unsafe_sk_of_bytes sk))
+      ~wrap: (fun x -> Data x)
+
+  let of_b58check_opt s =
+    match Base58.simple_decode b58check_encoding s with
+    | Some x -> Some x
+    | None -> Base58.simple_decode secret_key_encoding s
+  let of_b58check_exn s =
+    match of_b58check_opt s with
+    | Some x -> x
+    | None -> Format.kasprintf Pervasives.failwith "Unexpected data (%s)" name
+  let of_b58check s =
+    match of_b58check_opt s with
+    | Some x -> Ok x
+    | None ->
+        generic_error
+          "Failed to read a b58check_encoding data (%s): %S"
+          name s
+
+  let to_b58check s = Base58.simple_encode b58check_encoding s
+  let to_short_b58check s =
+    String.sub
+      (to_b58check s) 0
+      (10 + String.length (Base58.prefix b58check_encoding))
+
+  let () =
+    Base58.check_encoded_prefix b58check_encoding "edsk" 54 ;
+    Base58.check_encoded_prefix secret_key_encoding "edsk" 98
+
+  include Compare.Make(struct
+      type nonrec t = t
+      let compare a b =
+        MBytes.compare (Sign.unsafe_to_bytes a) (Sign.unsafe_to_bytes b)
+    end)
+
+  include Helpers.MakeRaw(struct
+      type nonrec t = t
+      let name = name
+      let of_bytes_opt = of_bytes_opt
+      let of_string_opt = of_string_opt
+      let to_string = to_string
+    end)
+
+  include Helpers.MakeEncoder(struct
+      type nonrec t = t
+      let name = name
+      let title = title
+      let raw_encoding =
+        let open Data_encoding in
+        conv to_bytes of_bytes_exn (Fixed.bytes size)
+      let of_b58check = of_b58check
+      let of_b58check_opt = of_b58check_opt
+      let of_b58check_exn = of_b58check_exn
+      let to_b58check = to_b58check
+      let to_short_b58check = to_short_b58check
+    end)
+
+  let pp ppf t = Format.fprintf ppf "%s" (to_b58check t)
+
+end
+
+type t = MBytes.t
+
+type Base58.data +=
+  | Data of t
+
+let name = "Ed25519"
+let title = "An Ed25519 signature"
+
+let size = Sign.bytes
+
+let of_bytes_opt s =
+  if MBytes.length s = size then Some s else None
+let to_bytes x = x
+
+let to_string s = MBytes.to_string (to_bytes s)
+let of_string_opt s = of_bytes_opt (MBytes.of_string s)
+
+let b58check_encoding =
+  Base58.register_encoding
+    ~prefix: Base58.Prefix.ed25519_signature
+    ~length: size
+    ~to_raw: MBytes.to_string
+    ~of_raw: (fun s -> Some (MBytes.of_string s))
+    ~wrap: (fun x -> Data x)
+
+include Helpers.MakeRaw(struct
+    type nonrec t = t
+    let name = name
+    let of_bytes_opt = of_bytes_opt
+    let of_string_opt = of_string_opt
+    let to_string = to_string
+  end)
+
+include Helpers.MakeB58(struct
+    type nonrec t = t
+    let title = title
+    let name = name
+    let b58check_encoding = b58check_encoding
+  end)
+
+include Helpers.MakeEncoder(struct
+    type nonrec t = t
+    let name = name
+    let title = title
+    let raw_encoding =
+      let open Data_encoding in
+      conv to_bytes of_bytes_exn (Fixed.bytes size)
+    let of_b58check = of_b58check
+    let of_b58check_opt = of_b58check_opt
+    let of_b58check_exn = of_b58check_exn
+    let to_b58check = to_b58check
+    let to_short_b58check = to_short_b58check
+  end)
+
+let check ?watermark pk signature msg =
+  let msg =
+    Blake2b.to_bytes @@
+    Blake2b.hash_bytes @@
+    match watermark with
+    | None -> [msg]
+    | Some prefix -> [ prefix ; msg ] in
+  Sign.verify ~pk ~signature ~msg
+
+let generate_key ?seed () =
+  match seed with
+  | None ->
+      let pk, sk = Sign.keypair () in
+      Public_key.hash pk, pk, sk
+  | Some seed ->
+      let seedlen = MBytes.length seed in
+      if seedlen < Sign.skbytes then
+        invalid_arg (Printf.sprintf "Ed25519.generate_key: seed must \
+                                     be at least %d bytes long (got %d)"
+                       Sign.skbytes seedlen) ;
+      let sk = MBytes.create Sign.skbytes in
+      MBytes.blit seed 0 sk 0 Sign.skbytes ;
+      let sk = Sign.unsafe_sk_of_bytes sk in
+      let pk = Sign.neuterize sk in
+      Public_key.hash pk, pk, sk
 

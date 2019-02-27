@@ -238,6 +238,8 @@ end
 
 include MakeEncodings(struct let encodings = [] end)
 
+let prefix { prefix ; _ } = prefix
+
 
 module Prefix = struct
 
