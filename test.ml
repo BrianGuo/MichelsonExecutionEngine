@@ -28,9 +28,10 @@ let x =
        ~parameter:(Cast.expr_of_string "Unit")
        ~storage:""
        ~storage_ty:t.storage_type
-       >>=? fun (_) ->
+       >>=? fun (result) ->
+        print_endline (print_test result.storage);
         Lwt.return @@ ok ("hello"))
 
-let () =
-  print_endline @@ Misc.force_ok x
+let n =
+  Misc.force_ok x
 
