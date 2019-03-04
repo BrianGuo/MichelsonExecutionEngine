@@ -104,6 +104,8 @@ module Public_key_hash = struct
   | Secp256k1 of Secp256k1.Public_key_hash.t
   | P256 of P256.Public_key_hash.t
 
+  let title = "A Ed25519, Secp256k1, or P256 public key hash"
+
   let encoding : (public_key_hash Data_encoding.t) =
     def "public_key_hash" ~description:"A Ed25519, Secp256k1, or P256 public key hash" @@
     union [
@@ -155,6 +157,28 @@ module Public_key_hash = struct
             P256.Public_key_hash.compare x y
         | _ -> Pervasives.compare a b
     end)
+  
+  let raw_encoding =
+    let open Data_encoding in
+    def "public_key_hash" ~description:title @@
+    union [
+      case (Tag 0) Ed25519.Public_key_hash.encoding
+        ~title:"Ed25519"
+        (function Ed25519 x -> Some x | _ -> None)
+        (function x -> Ed25519 x);
+      case (Tag 1) Secp256k1.Public_key_hash.encoding
+        ~title:"Secp256k1"
+        (function Secp256k1 x -> Some x | _ -> None)
+        (function x -> Secp256k1 x) ;
+      case (Tag 2)
+        ~title:"P256" P256.Public_key_hash.encoding
+        (function P256 x -> Some x | _ -> None)
+        (function x -> P256 x)
+    ]
+  let to_bytes s =
+    Data_encoding.Binary.to_bytes_exn raw_encoding s
+  let to_string s = MBytes.to_string (to_bytes s)
+
 end
 
 module Secret_key = struct

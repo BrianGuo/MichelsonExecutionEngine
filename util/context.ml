@@ -5,10 +5,9 @@ type t = Context_type.t
 
 let init ?(slow=false) (* ?preserved_cycles ?endorsers_per_block ?commitments *) n =
   let accounts = Account.generate_accounts n in
-  let contracts = (* List.map (fun (a, _) ->
-    Alpha_context.Contract.implicit_contract Account.(a.pkh)) accounts *)
-    Contract.init_contracts n in
-  let blk =
+  let contracts = List.map (fun (a, _) ->
+    Contract.implicit_contract Account.(a.pkh)) accounts in 
+  let blk = 
   begin
   if slow then
     Block.genesis

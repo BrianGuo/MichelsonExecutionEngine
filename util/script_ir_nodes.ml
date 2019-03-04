@@ -130,7 +130,7 @@ end
 
 
 type 'kind internal_operation = {
-  source: Contract.t ;
+  source: Context_type.contract_type ;
   operation: 'kind manager_operation ;
   nonce: int ;
 }
@@ -140,7 +140,7 @@ and _ manager_operation =
   | Transaction : {
       amount: Tez.tez ;
       parameters: Script.lazy_expr option ;
-      destination: Contract.t ;
+      destination: Context_type.contract_type ;
     } -> Kind.transaction manager_operation
   | Origination : {
       manager: Signature.public_key_hash ;

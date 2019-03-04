@@ -12,6 +12,7 @@ let range i j =
   loop [] j
 
 let generate_accounts n : (t * big_int) list =
+  (* Signature.Public_key_hash.Table.clear known_accounts ; *)
   let amount = big_int_of_string "+4000000000000" in
   List.map (fun _ ->
       let (pkh, pk, sk) = Signature.generate_key () in

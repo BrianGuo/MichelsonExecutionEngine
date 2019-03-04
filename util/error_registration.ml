@@ -71,7 +71,7 @@ type error += Ill_formed_type of string option * Script.expr * Script.location
 type error += Self_in_lambda of Script.location
 type error += Undefined_binop : Script.location * prim * Script.expr * Script.expr -> error
 type error += Undefined_unop : Script.location * prim * Script.expr -> error
-type error += Invalid_contract of Script.location * Contract.t
+type error += Invalid_contract of Script.location * Context_type.contract_type
 type error += Ill_typed_data : string option * Script.expr * Script.expr -> error
 (* Helpers for encoding *)
 let type_map_enc =

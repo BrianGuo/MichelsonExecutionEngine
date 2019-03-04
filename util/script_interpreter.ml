@@ -10,7 +10,7 @@ open Script_ir_nodes
 open Error_registration
 
 type execution_trace =
-  (Script.location * Gas.actual * (Script.expr * string option) list) list
+  (Script.location * Gas.t * (Script.expr * string option) list) list
 
 type 'tys stack =
   | Item : 'ty * 'rest stack -> ('ty * 'rest) stack

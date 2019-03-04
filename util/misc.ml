@@ -49,13 +49,13 @@ let init_environment () =
   (* Incremental.begin_construction blk >>=? fun i ->
   let tezos_context = Incremental.context i in
   let tezos_context = Proto_alpha.Alpha_context.Gas.set_limit tezos_context @@ Z.of_int 350000 in *)
-  let tezos_context = Context_type.B (blk) in
+  let tezos_context = {Context_type.default_context with block=blk} in
   let identities =
     List.map (fun ((a:Account.t), c) -> {
           public_key = a.pk ;
           public_key_hash = a.pkh ;
           secret_key = a.sk ;
-          implicit_contract = c ;
+          implicit_contract = c
         }) @@
     List.combine accounts contracts in
   return {tezos_context ; identities}

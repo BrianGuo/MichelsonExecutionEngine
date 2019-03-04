@@ -33,156 +33,28 @@ open Script_ir_nodes
 open Error_registration
 open Script
 open Tezos_stdlib
+open Context_type
 
 module Gas = struct
-  type t = int
-  type cost = int
-  type actual =
-    | Unaccounted
-    | Limited of { remaining : Z.t }
+  include Gas
 
-  let level _ = Unaccounted
-  let consume ctxt _ =
-    ok ctxt
+  let consume ctxt cost =
+    consume_gas ctxt.block_gas ctxt.gas cost >>? fun (block_gas, operation_gas) ->
+      ok { ctxt with block_gas = block_gas ; gas = operation_gas }
+  
+  let set_unlimited ctxt = 
+    {ctxt with gas = Unaccounted }
 
-  let set_unlimited ctxt =
-    ctxt
-
-  let check_enough _ _  = ok ()
+  let level ctxt =
+    ctxt.gas
+  
+  let check_enough ctxt cost =
+    Gas.check_enough ctxt.block_gas ctxt.gas cost
 end
 
-module Unparse_costs = struct
-  let cycle _ = 0
-  let prim_cost _ _ = 0
-  let unit = 0
-  let int _ = 0
-  let string _ = 0
-  let bytes _ = 0
-  let bool = 0
-  let timestamp _ = 0
-  let contract = 0
-  let signature = 0
-  let tez = 0
-  let key = 0
-  let key_hash = 0
-  let operation _ = 0
-  let pair = 0
-  let union = 0
-  let some = 0
-  let none = 0
-  let list_element = 0
-  let set_element = 0
-  let map_element = 0
-  let seq_cost _ = 0
-end
-
-module Typecheck_costs = struct
-  let type_ _ = 0
-  let cycle _ = 0
-  let map_element _ = 0
-  let unit = 0
-  let bool = 0
-  let string _ = 0
-  let z _ = 0
-  let tez = 0
-  let string_timestamp = 0
-  let key = 0
-  let key_hash = 0
-  let signature = 0
-  let contract = 0
-  let pair = 0
-  let union = 0
-  let lambda = 0
-  let some = 0
-  let none = 0
-  let list_element = 0
-  let set_element _ = 0
-  let instr _ = 0
-  let contract_exists = 0
-  let get_script = 0
-end
-
-module Michelson_v1_gas = struct
-  module Cost_of = struct
-    let z_to_int64 = 0
-    let set_update _ _ _ = 0
-    let hash _ _ = 0
-    let map_to_list _ = 0
-    let cycle = 0
-    let stack_op = 0
-    let push = 0
-    let wrap = 0
-    let variant_no_data = 0
-    let branch = 0
-    let pair = 0
-    let pair_access = 0
-    let cons = 0
-    let loop_cycle = 0
-    let list_size = 0
-    let empty_set = 0
-    let set_to_list _ = 0
-    let set_mem _ _ = 0
-    let set_size = 0
-    let empty_map = 0
-    let map_mem _ _ = 0
-    let map_get _ _ = 0
-    let map_update _ _ _ = 0
-    let map_size = 0
-    let big_map_mem _ _ = 0
-    let big_map_get _ _ = 0
-    let big_map_update _ _ _ = 0
-    let add_timestamp _ _ = 0
-    let sub_timestamp _ _ = 0
-    let diff_timestamps _ _ = 0
-    let concat_string _ _ = 0
-    let slice_string _ = 0
-    let concat_bytes _ _ = 0
-    let int64_op = 0
-    let bool_binop _ _ = 0
-    let bool_unop _ = 0
-    let abs _ = 0
-    let int _ = 0
-    let neg _ = 0
-    let add _ _ = 0
-    let sub _ _ = 0
-    let mul _ _ = 0
-    let int64_to_z = 0
-    let bitwise_binop _ _ = 0
-    let div _ _ = 0
-    let shift_left _ _ = 0
-    let shift_right _ _ = 0
-    let logor _ _ = 0
-    let logand _ _ = 0
-    let logxor _ _ = 0
-    let lognot _ = 0
-    let exec _ = 0
-    let compare_bool _ _ = 0
-    let compare_string _ _ = 0
-    let compare_bytes _ _ = 0
-    let compare_tez _ _ = 0
-    let compare_int _ _ = 0
-    let compare_nat _ _ = 0
-    let compare_key_hash _ _ = 0
-    let compare_timestamp _ _ = 0
-    let compare_address _ _ = 0
-    let compare_res _ _ = 0
-    let unpack_failed _ = 0
-    let address = 0
-    let contract = 0
-    let transfer = 0
-    let create_account = 0
-    let implicit_account = 0
-    let create_contract = 0
-    let balance = 0
-    let now = 0
-    let check_signature = 0
-    let hash_key = 0
-    let steps_to_quota = 0
-    let source = 0
-    let self = 0
-    let amount = 0
-  end
-end
+module Unparse_costs = Gas_costs.Unparse_costs
+module Michelson_v1_gas = Gas_costs
+module Typecheck_costs = Gas_costs.Typecheck_costs
 
 module Constants = struct
  let michelson_maximum_type_size _ = 1000
