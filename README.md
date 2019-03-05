@@ -10,6 +10,8 @@ Todos:
     - assert class added, not yet tested
 - Have not yet verified that signatures/hashing works as intended.
     - Signatures now follow the native client's signature scheme (supposedly)
+- Gas counts not properly accounted for
+    - Gas counts now properly counted
 - Stack trace not pretty printed in a desirable way.
 - Build out API Docs
 - File structure reorganization

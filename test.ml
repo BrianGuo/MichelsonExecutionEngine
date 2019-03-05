@@ -22,7 +22,10 @@ let x =
   Lwt_main.run (
     Context.init 10 >>=? fun (_, contracts, _) ->
     let context = 
-      {Context_type.default_context with storage_map = (Storage.init_contracts_storage contracts) } in
+      {Context_type.default_context with 
+        storage_map = (Storage.init_contracts_storage contracts);
+        gas = Limited ({remaining = Z.of_int 100});
+        block_gas = Z.of_int 100000 } in
     match t.code with
   | Lam (_, expr) ->
       print_endline (print_test expr);

@@ -39,6 +39,13 @@ module Gas = struct
   include Gas
 
   let consume ctxt cost =
+    print_endline @@ "allocations: " ^ Z.to_string @@ cost.allocations;
+    print_endline @@ "steps: " ^ Z.to_string @@ cost.steps;
+    print_endline @@ "reads: " ^ Z.to_string @@ cost.reads;
+    print_endline @@ "writes: " ^ Z.to_string @@ cost.writes;
+    print_endline @@ "bytes_read: " ^ Z.to_string @@ cost.bytes_read;
+    print_endline @@ "bytes_written: " ^ Z.to_string @@ cost.bytes_written;
+    print_endline "---------------";
     consume_gas ctxt.block_gas ctxt.gas cost >>? fun (block_gas, operation_gas) ->
       ok { ctxt with block_gas = block_gas ; gas = operation_gas }
   
