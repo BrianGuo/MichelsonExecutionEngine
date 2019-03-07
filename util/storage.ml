@@ -1,5 +1,5 @@
+open Context
 open Context_type
-
 let storage_mapping = Storage_map_mod.empty
 
 let init_contracts_storage contracts =

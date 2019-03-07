@@ -100,15 +100,17 @@ let of_b58check s =
            string)
 
 
-let exists ctxt contract = 
+let exists (ctxt : Context.t) contract = 
   Lwt.return @@ 
   ok @@ 
   Context_type.Storage_map_mod.mem contract ctxt.storage_map
 
-let get_script c _ : (Context_type.t * Script.t option) tzresult Lwt.t =
+let get_script
+  : Context.t -> 'b -> (Context.t * Script.t option) tzresult Lwt.t 
+  = fun c _ ->
   return (c, None)
 
-let increment_origination_nonce ctxt =
+let increment_origination_nonce (ctxt : Context.t) =
   match ctxt.origination_nonce with
   | None -> error Undefined_operation_nonce
   | Some origination_nonce ->

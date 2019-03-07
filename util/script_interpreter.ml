@@ -63,7 +63,7 @@ let unparse_stack ctxt (stack, stack_ty) =
 
 
 let rec step
-  : type b a.
+  : type b a .
     (?log: execution_trace ref ->
      Context.t ->
      source: Contract.t ->

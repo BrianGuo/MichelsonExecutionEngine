@@ -1,169 +1,42 @@
-open Tezos_error_monad
-open Error_monad
-open Tezos_stdlib
-open Signature
+open Script_ir_nodes
 
+(* todo: maybe there is a visitor pattern way of doing this? *)
+type simple_comparable_ty =
+  | Int_key
+  | Nat_key 
+  | String_key 
+  | Bytes_key 
+  | Mutez_key 
+  | Bool_key 
+  | Key_hash_key 
+  | Timestamp_key 
+  | Address_key
 
-type error += Lazy_script_decode
+type simple_ty =
+  | Unit_t 
+  | Int_t 
+  | Nat_t
+  | Signature_t
+  | String_t
+  | Bytes_t
+  | Mutez_t
+  | Key_hash_t
+  | Key_t
+  | Timestamp_t
+  | Address_t
+  | Bool_t
+  | Pair_t of (simple_ty * simple_ty)
+  | Union_t of (simple_ty * simple_ty)
+  | Lambda_t of (simple_ty * simple_ty)
+  | Option_t of simple_ty
+  | List_t of simple_ty
+  | Set_t of simple_comparable_ty
+  | Map_t of (simple_comparable_ty * simple_ty)
+  | Big_map_t of (simple_comparable_ty * simple_ty)
+  | Contract_t of simple_ty
+  | Operation_t
 
-module type SET = sig
-  type elt
-  type t
-  val empty: t
-  val is_empty: t -> bool
-  val mem: elt -> t -> bool
-  val add: elt -> t -> t
-  val singleton: elt -> t
-  val remove: elt -> t -> t
-  val union: t -> t -> t
-  val inter: t -> t -> t
-  val diff: t -> t -> t
-  val compare: t -> t -> int
-  val equal: t -> t -> bool
-  val subset: t -> t -> bool
-  val iter: (elt -> unit) -> t -> unit
-  val map: (elt -> elt) -> t -> t
-  val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
-  val for_all: (elt -> bool) -> t -> bool
-  val exists: (elt -> bool) -> t -> bool
-  val filter: (elt -> bool) -> t -> t
-  val partition: (elt -> bool) -> t -> t * t
-  val cardinal: t -> int
-  val elements: t -> elt list
-  val min_elt_opt: t -> elt option
-  val max_elt_opt: t -> elt option
-  val choose_opt: t -> elt option
-  val split: elt -> t -> t * bool * t
-  val find_opt: elt -> t -> elt option
-  val find_first_opt: (elt -> bool) -> t -> elt option
-  val find_last_opt: (elt -> bool) -> t -> elt option
-  val of_list: elt list -> t
-end
-
-module type MAP = sig
-  type key
-  type (+'a) t
-  val empty: 'a t
-  val is_empty: 'a t -> bool
-  val mem: key -> 'a t -> bool
-  val add: key -> 'a -> 'a t -> 'a t
-  val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
-  val singleton: key -> 'a -> 'a t
-  val remove: key -> 'a t -> 'a t
-  val merge:
-    (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-  val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-  val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
-  val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-  val iter: (key -> 'a -> unit) -> 'a t -> unit
-  val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val for_all: (key -> 'a -> bool) -> 'a t -> bool
-  val exists: (key -> 'a -> bool) -> 'a t -> bool
-  val filter: (key -> 'a -> bool) -> 'a t -> 'a t
-  val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-  val cardinal: 'a t -> int
-  val bindings: 'a t -> (key * 'a) list
-  val min_binding_opt: 'a t -> (key * 'a) option
-  val max_binding_opt: 'a t -> (key * 'a) option
-  val choose_opt: 'a t -> (key * 'a) option
-  val split: key -> 'a t -> 'a t * 'a option * 'a t
-  val find_opt: key -> 'a t -> 'a option
-  val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
-  val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
-  val map: ('a -> 'b) -> 'a t -> 'b t
-  val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
-end
-
-module type Boxed_set = sig
-  type elt
-  module OPS : SET with type elt = elt
-  val boxed : OPS.t
-  val size : int
-end
-
-type 'elt set = (module Boxed_set with type elt = 'elt)
-
-type type_annot = [ `Type_annot of string ]
-type field_annot = [ `Field_annot of string ]
-type var_annot = [ `Var_annot of string ]
-
-type n = Natural_tag
-and z = Integer_tag
-and 't num = Z.t
-and signature  = Signature.t
-and ('a, 'b) pair = 'a * 'b
-and ('a, 'b) union = L of 'a | R of 'b
-and end_of_stack = unit
-
-
-type 'ty comparable_ty =
-  | Int_key : type_annot option -> (z num) comparable_ty
-  | Nat_key : type_annot option -> (n num) comparable_ty
-  | String_key : type_annot option -> string comparable_ty
-  | Bytes_key : type_annot option -> MBytes.t comparable_ty
-  | Mutez_key : type_annot option -> Tez.t comparable_ty
-  | Bool_key : type_annot option -> bool comparable_ty
-  | Key_hash_key : type_annot option -> public_key_hash comparable_ty
-  | Timestamp_key : type_annot option -> Script_timestamp.t comparable_ty
-  | Address_key : type_annot option -> Context_type.contract_type comparable_ty
-
-type ex_comparable_ty = Ex_comparable_ty : 'a comparable_ty -> ex_comparable_ty
-
-
-module Kind = struct
-
-  type reveal = Reveal_kind
-  type transaction = Transaction_kind
-  type origination = Origination_kind
-  type delegation = Delegation_kind
-
-end
-
-
-module type Boxed_map = sig
-  type key
-  type value
-  val key_ty : key comparable_ty
-  module OPS : MAP with type key = key
-  val boxed : value OPS.t * int
-end
-
-
-type 'kind internal_operation = {
-  source: Context_type.contract_type ;
-  operation: 'kind manager_operation ;
-  nonce: int ;
-}
-
-and _ manager_operation =
-  | Reveal: Signature.Public_key.t -> Kind.reveal manager_operation
-  | Transaction : {
-      amount: Tez.tez ;
-      parameters: Script.lazy_expr option ;
-      destination: Context_type.contract_type ;
-    } -> Kind.transaction manager_operation
-  | Origination : {
-      manager: Signature.public_key_hash ;
-      delegate: Signature.public_key_hash option ;
-      script: Script.t option ;
-      spendable: bool ;
-      delegatable: bool ;
-      credit: Tez.tez ;
-      preorigination: Context_type.contract_type option ;
-    } -> Kind.origination manager_operation
-  | Delegation : Signature.public_key_hash option ->
-      Kind.delegation manager_operation
-    (* alpha_context.mli *)
-
-type packed_manager_operation =
-  | Manager : 'kind manager_operation -> packed_manager_operation
-
-type packed_internal_operation =
-  | Internal_operation : 'kind internal_operation -> packed_internal_operation
-
-type ex_big_map = Ex_bm : ('key, 'value) big_map -> ex_big_map
-
-and ('bef, 'aft) instr =
+  (* and ('bef, 'aft) instr =
   (* stack ops *)
   | Drop :
       (_ * 'rest, 'rest) instr
@@ -427,63 +300,103 @@ and ('bef, 'aft) instr =
     ('rest, 'p typed_contract * 'rest) instr
   | Amount :
       ('rest, Tez.t * 'rest) instr
+      
+and unparameterized_descr =
+{ loc : Script.location ;
+  instr : (simple_ty * simple_ty) instr;
+  bef : simple_ty stack_ty ;
+  aft : simple_ty stack_ty ; }
 
-and ('bef, 'aft) descr =
-  { loc : Script.location ;
-    instr : ('bef, 'aft)  instr;
-    bef : 'bef stack_ty ;
-    aft : 'aft stack_ty ; }
+and unparameterized_lambda =
+| Lam of (simple_ty * unit, simple_ty * unit) unparameterized_descr * Script.expr
 
-and 'ty stack_ty =
-  | Item_t : 'ty ty * 'rest stack_ty * var_annot option -> ('ty * 'rest) stack_ty
-  | Empty_t : end_of_stack stack_ty
+and unparameterized_toplevel = {
+  param_type : simple_ty ;
+  storage_type : simple_ty ;
+  code : (simple_ty * simple_ty, packed_internal_operation list * simple_ty) unparameterized_lambda
+} *)
 
-and 'arg typed_contract =
-  'arg ty * Context_type.contract_type
+let simple_comp_ty_of_comp_ty 
+: type ta. ta comparable_ty -> simple_comparable_ty 
+  = fun comp_ty ->
+  match comp_ty with
+  | Int_key _ -> Int_key
+  | Nat_key _ -> Nat_key 
+  | String_key _ -> String_key 
+  | Bytes_key _ -> Bytes_key 
+  | Mutez_key _ -> Mutez_key 
+  | Bool_key _ -> Bool_key 
+  | Key_hash_key _ -> Key_hash_key 
+  | Timestamp_key _ -> Timestamp_key 
+  | Address_key _ -> Address_key
 
-and ('arg, 'ret) lambda =
-    Lam of ('arg * end_of_stack, 'ret * end_of_stack) descr * Script.expr
+let rec simple_ty_of_ty 
+  : type ta. ta ty -> simple_ty 
+  = fun ty -> 
+  match ty with
+  | Unit_t _ -> Unit_t
+  | Int_t _ -> Int_t
+  | Nat_t _ -> Nat_t
+  | Signature_t _ -> Signature_t
+  | String_t _ -> String_t
+  | Bytes_t _ -> Bytes_t
+  | Mutez_t _ -> Mutez_t 
+  | Key_hash_t _ -> Key_hash_t
+  | Key_t _ -> Key_t
+  | Timestamp_t _ -> Timestamp_t
+  | Address_t _ -> Address_t
+  | Bool_t _ -> Bool_t
+  | Pair_t ((t1, _, _), (t2, _, _), _) -> Pair_t (simple_ty_of_ty t1, simple_ty_of_ty t2)
+  | Union_t ((t1, _), (t2, _), _) -> Union_t (simple_ty_of_ty t1, simple_ty_of_ty t2)
+  | Lambda_t (t1, t2, _) -> Lambda_t (simple_ty_of_ty t1, simple_ty_of_ty t2)
+  | Option_t ((t1, _), _, _ ) -> Option_t (simple_ty_of_ty t1)
+  | List_t (t1, _) -> List_t (simple_ty_of_ty t1)
+  | Set_t (t1, _) -> Set_t (simple_comp_ty_of_comp_ty t1)
+  | Map_t (t1, t2, _) -> Map_t (simple_comp_ty_of_comp_ty t1, simple_ty_of_ty t2)
+  | Big_map_t (t1, t2, _) -> Big_map_t (simple_comp_ty_of_comp_ty t1, simple_ty_of_ty t2)
+  | Contract_t (t1, _) -> Contract_t (simple_ty_of_ty t1)
+  | Operation_t _ -> Operation_t
 
-and 'ty ty =
-  | Unit_t : type_annot option -> unit ty
-  | Int_t : type_annot option -> z num ty
-  | Nat_t : type_annot option -> n num ty
-  | Signature_t : type_annot option -> signature ty
-  | String_t : type_annot option -> string ty
-  | Bytes_t : type_annot option -> MBytes.t ty
-  | Mutez_t : type_annot option -> Tez.t ty
-  | Key_hash_t : type_annot option -> public_key_hash ty
-  | Key_t : type_annot option -> public_key ty
-  | Timestamp_t : type_annot option -> Script_timestamp.t ty
-  | Address_t : type_annot option -> Context_type.contract_type ty
-  | Bool_t : type_annot option -> bool ty
-  | Pair_t :
-      ('a ty * field_annot option * var_annot option) *
-      ('b ty * field_annot option * var_annot option) *
-      type_annot option -> ('a, 'b) pair ty
-  | Union_t : ('a ty * field_annot option) * ('b ty * field_annot option) * type_annot option  -> ('a, 'b) union ty
-  | Lambda_t : 'arg ty * 'ret ty * type_annot option  -> ('arg, 'ret) lambda ty
-  | Option_t : ('v ty * field_annot option) * field_annot option * type_annot option  -> 'v option ty
-  | List_t : 'v ty * type_annot option -> 'v list ty
-  | Set_t : 'v comparable_ty * type_annot option -> 'v set ty
-  | Map_t : 'k comparable_ty * 'v ty * type_annot option -> ('k, 'v) map ty
-  | Big_map_t : 'k comparable_ty * 'v ty * type_annot option -> ('k, 'v) big_map ty
-  | Contract_t : 'arg ty * type_annot option -> 'arg typed_contract ty
-  | Operation_t : type_annot option -> packed_internal_operation ty
+(* let comparable_ty_of_simple_ty
+  : simple_comparable_ty -> ta comparable_ty
+  = fun comp_ty ->
+  match comp_ty with
+  | Int_key -> Int_key None
+  | Nat_key -> Nat_key  None
+  | String_key -> String_key  None
+  | Bytes_key -> Bytes_key  None
+  | Mutez_key -> Mutez_key  None
+  | Bool_key -> Bool_key  None
+  | Key_hash_key -> Key_hash_key  None
+  | Timestamp_key -> Timestamp_key  None
+  | Address_key -> Address_key None
 
-and ('key, 'value) map = (module Boxed_map with type key = 'key and type value = 'value)
-
-
-and ('key, 'value) big_map = { diff : ('key, 'value option) map ;
-                               key_type : 'key ty ;
-                               value_type : 'value ty }
-
-
-type ('arg, 'storage) script =
-  { code : (('arg, 'storage) pair, (packed_internal_operation list, 'storage) pair) lambda ;
-    arg_type : 'arg ty ;
-    storage : 'storage ;
-    storage_type : 'storage ty }
-
-type ex_ty = Ex_ty : 'a ty -> ex_ty
-
+let rec ty_of_simple_ty
+  : type ta. simple_ty -> ta ty
+  = fun ty ->
+  match ty with
+  | Unit_t  _ -> Unit_t None
+  | Int_t  _ -> Int_t None
+  | Nat_t _ -> Nat_t None
+  | Signature_t _ -> Signature_t None
+  | String_t _ -> String_t None
+  | Bytes_t _ -> Bytes_t None
+  | Mutez_t _ -> Mutez_t None
+  | Key_hash_t _ -> Key_hash_t None
+  | Key_t _ -> Key_t None
+  | Timestamp_t _ -> Timestamp_t None
+  | Address_t _ -> Address_t None
+  | Bool_t _ -> Bool_t None
+  | Pair_t (a, b) -> 
+      Pair_t ((ty_of_simple_ty a, None, None), (ty_of_simple_ty b, None, None), None)
+  | Union_t (a, b) ->
+      Union_t ((ty_of_simple_ty a, None), (ty_of_simple_ty b, None), None)
+  | Lambda_t (a, b) ->
+      Lambda_t (ty_of_simple_ty a, ty_of_simple_ty b, None)
+  | Option_t a -> Option_t ((ty_of_simple_ty a, None), None, None)
+  | List_t a -> List_t (ty_of_simple_ty a, None)
+  | Set_t a -> Set_t (comparable_ty_of_simple_ty a, None) 
+  | Map_t (a, b) -> Map_t (comparable_ty_of_simple_ty a, ty_of_simple_ty b, None)
+  | Big_map_t (a, b) -> Big_map_t (comparable_ty_of_simple_ty a, ty_of_simple_ty b, None)
+  | Contract_t a -> Contract_t (ty_of_simple_ty a, None)
+  | Operation_t _ -> Operation_t None *)

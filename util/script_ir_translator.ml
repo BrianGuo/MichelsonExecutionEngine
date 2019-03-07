@@ -33,12 +33,11 @@ open Script_ir_nodes
 open Error_registration
 open Script
 open Tezos_stdlib
-open Context_type
 
 module Gas = struct
   include Gas
 
-  let consume ctxt cost =
+  let consume (ctxt : Context.t) cost =
     print_endline @@ "allocations: " ^ Z.to_string @@ cost.allocations;
     print_endline @@ "steps: " ^ Z.to_string @@ cost.steps;
     print_endline @@ "reads: " ^ Z.to_string @@ cost.reads;
@@ -49,13 +48,13 @@ module Gas = struct
     consume_gas ctxt.block_gas ctxt.gas cost >>? fun (block_gas, operation_gas) ->
       ok { ctxt with block_gas = block_gas ; gas = operation_gas }
   
-  let set_unlimited ctxt = 
+  let set_unlimited (ctxt : Context.t) = 
     {ctxt with gas = Unaccounted }
 
-  let level ctxt =
+  let level (ctxt : Context.t) =
     ctxt.gas
   
-  let check_enough ctxt cost =
+  let check_enough (ctxt : Context.t) cost =
     Gas.check_enough ctxt.block_gas ctxt.gas cost
 end
 
@@ -68,6 +67,11 @@ module Constants = struct
 end
 
 type ex_comparable_ty = Ex_comparable_ty : 'a comparable_ty -> ex_comparable_ty
+type 'a ty_storage = {
+  ty : 'a ty;
+  storage : 'a;
+}
+type ex_ty_storage = Ex_ty_storage : 'a ty_storage -> ex_ty_storage
 type ex_ty = Ex_ty : 'a ty -> ex_ty
 type ex_stack_ty = Ex_stack_ty : 'a stack_ty -> ex_stack_ty
 type ex_typed_value = Ex_typed_value : ('a Script_ir_nodes.ty * 'a) -> ex_typed_value
@@ -86,7 +90,6 @@ let add_dip ty annot prev =
   match prev with
   | Lambda | Toplevel _ -> Dip (Item_t (ty, Empty_t, annot), prev)
   | Dip (stack, _) -> Dip (Item_t (ty, stack, annot), prev)
-
 (* ---- Type size accounting ------------------------------------------------*)
 
 (* TODO include annot in size ? *)
@@ -2920,6 +2923,22 @@ and parse_toplevel
         | (Some _, Some _, None) -> error (Missing_field K_code)
         | (Some p, Some s, Some c) -> ok (p, s, c)
 
+(* and parse_external_contract context toplevel_expr =
+    parse_toplevel toplevel_expr >>? fun (param_ty_node, storage_ty_node, code_field) ->
+    parse_ty context ~allow_big_map:false ~allow_operation:false param_ty_node >>? fun (Ex_ty param_type, _) ->
+    parse_storage_ty context storage_ty_node >>? fun (Ex_ty storage_type, _) ->
+  (* let _ = force_ok_alpha ~msg:"storage eq" @@ Script_ir_translator.ty_eq context storage_type claimed_storage_type in
+  let _ = force_ok_alpha ~msg:"param eq" @@ Script_ir_translator.ty_eq context param_type claimed_parameter_type in *)
+  Lwt_main.run (
+  let param_type_full = Pair_t ((param_type, None, None),
+                                (storage_type, None, None), None) in
+  let ret_type_full =
+    Pair_t ((List_t (Operation_t None, None), None, None),
+            (storage_type, None, None), None) in
+  parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
+    context (param_type_full, None) ret_type_full code_field >>=? fun (code, _) ->
+  return ({ param_type = param_type; storage_type = storage_type; code} )) *)
+  
 let parse_script
   : ?type_logger: type_logger ->
     Context.t -> Script.t -> (ex_script * Context.t) tzresult Lwt.t

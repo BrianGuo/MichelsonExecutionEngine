@@ -2,6 +2,7 @@ open Lib
 open Tezos_error_monad
 open Error_monad
 open Tezos_micheline
+open Fileparser
 open Context_type
 
 let print_test expr =
@@ -10,19 +11,15 @@ let print_test expr =
   Format.flush_str_formatter ()
 
 let x =
-  let t = Fileparser.get_toplevel
-    ~environment:{
-      tezos_context = Context_type.default_context;
-      identities = [];
-    }
+  let t = Fileparser.get_toplevel_object
     "helloworld.tz"
-    (String_t (Some (`Type_annot "")))
-    (Unit_t (None))
+    (String_t None)
+    (Unit_t None)
   in
   Lwt_main.run (
-    Context.init 10 >>=? fun (_, contracts, _) ->
+    Misc.init 10 >>=? fun (_, contracts, _) ->
     let context = 
-      {Context_type.default_context with 
+      {Context.default_context with 
         storage_map = (Storage.init_contracts_storage contracts);
         gas = Limited ({remaining = Z.of_int 100});
         block_gas = Z.of_int 100000 } in
@@ -36,7 +33,7 @@ let x =
        ~self:(List.nth contracts 2, t.code)
        ~amount:Tez.one
        ~parameter:(Cast.expr_of_string "Unit")
-       ~storage:""
+       ~storage:"1231231"
        ~storage_ty:t.storage_type
        >>=? fun (result) ->
         List.iter (fun contract -> 

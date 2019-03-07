@@ -1,5 +1,4 @@
 open Tezos_crypto
-open Gas
 
 module Contract_hash = struct
   let contract_hash = "\002\090\121" 
@@ -46,19 +45,3 @@ type contract_storage = {
   balance: int64;
 }
 
-type t =
-  { 
-    block: Block.t;
-    origination_nonce: origination_nonce option;
-    storage_map: contract_storage Storage_map_mod.t;
-    gas: Gas.t;
-    block_gas: Z.t;
-  }
-
-let default_context = {
-  block = ([]);
-  origination_nonce = None;
-  storage_map = Storage_map_mod.empty;
-  gas = Unaccounted;
-  block_gas = Z.zero;
-}

@@ -44,12 +44,36 @@ let force_ok ?(msg = "") = function
 
 let force_ok_alpha ~msg a = force_ok ~msg @@ wrap_error a
 
+let init ?(slow=false) (* ?preserved_cycles ?endorsers_per_block ?commitments *) n =
+  let accounts = Account.generate_accounts n in
+  let contracts = List.map (fun (a, _) ->
+    Contract.implicit_contract Account.(a.pkh)) accounts in 
+  let blk = 
+  begin
+  if slow then
+    Block.genesis
+      (* ?preserved_cycles
+      ?endorsers_per_block
+      ?commitments *)
+      accounts
+  else
+    Block.genesis
+      (* ?preserved_cycles
+      ~blocks_per_cycle:32l
+      ~blocks_per_commitment:4l
+      ~blocks_per_roll_snapshot:8l
+      ?endorsers_per_block
+      ?commitments *)
+      accounts
+  end in
+  return (blk, contracts, List.map fst accounts)
+
 let init_environment () =
-  Context.init 10 >>=? fun (blk, contracts, accounts) ->
+  init 10 >>=? fun (blk, contracts, accounts) ->
   (* Incremental.begin_construction blk >>=? fun i ->
   let tezos_context = Incremental.context i in
   let tezos_context = Proto_alpha.Alpha_context.Gas.set_limit tezos_context @@ Z.of_int 350000 in *)
-  let tezos_context = {Context_type.default_context with block=blk} in
+  let tezos_context = {Context.default_context with block=blk} in
   let identities =
     List.map (fun ((a:Account.t), c) -> {
           public_key = a.pk ;
