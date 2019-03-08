@@ -1,6 +1,5 @@
 open Tezos_micheline.Micheline_parser
 open Tezos_micheline.Micheline
-open Misc
 
 type parsed =
   { source : string ;
@@ -37,7 +36,7 @@ let expand_all source ast errors =
          (l, (ploc, elocs)))
       (List.sort compare loc_table)
       (List.sort compare grouped) in
-  match wrap_error (Michelson_v1_primitives.prims_of_strings expanded) with
+  match (Michelson_v1_primitives.prims_of_strings expanded) with
   | Ok expanded ->
       { source ; unexpanded ; expanded ;
         expansion_table ; unexpansion_table },

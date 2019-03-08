@@ -11,6 +11,7 @@ let print_test expr =
   Format.flush_str_formatter ()
 
 let x =
+  Error_registration.register ();
   let t = Fileparser.get_toplevel_object
     "helloworld.tz"
     (String_t None)
@@ -24,15 +25,14 @@ let x =
         gas = Limited ({remaining = Z.of_int 100});
         block_gas = Z.of_int 100000 } in
     match t.code with
-  | Lam (_, expr) ->
-      print_endline (print_test expr);
+  | Lam (_, _) ->
       Script_interpreter.execute context Readable
       ~source:(List.nth contracts 0)
       ~payer:(List.nth contracts 1)
       ~arg_type:t.param_type
        ~self:(List.nth contracts 2, t.code)
        ~amount:Tez.one
-       ~parameter:(Cast.expr_of_string "Unit")
+       ~parameter:(Cast.expr_of_string "123")
        ~storage:"1231231"
        ~storage_ty:t.storage_type
        >>=? fun (result) ->
@@ -45,6 +45,12 @@ let x =
         print_endline (print_test result.storage);
         Lwt.return @@ ok ("hello"))
 
-let n =
-  Misc.force_ok x
+let result = 
+  let context = Context.default_context in 
+    Misc.force_ok ~msg:"this is the forceok message" @@ Fileparser.get_toplevel_and_execute () context "helloworld.tz" 
+    {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "Unit"; storage = "\"\""}
+  
+let () =
+  print_endline (print_test result.storage)
+  
 

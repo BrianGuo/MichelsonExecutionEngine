@@ -759,7 +759,7 @@ and execute ?log ctxt mode ~source ~payer ~self ~arg_type ~storage ~storage_ty s
   (Script.expr * packed_internal_operation list * Context.t ) tzresult Lwt.t =
   trace
     (Bad_contract_parameter self)
-    (parse_data ctxt arg_type arg) >>=? fun (arg, ctxt) ->
+    (parse_data ctxt arg_type arg)  >>=? fun (arg, ctxt) ->
   trace
     (Generic_error)
     (interp ?log ctxt ~source ~payer ~self amount script (arg, storage))

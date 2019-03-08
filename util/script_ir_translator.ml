@@ -38,13 +38,13 @@ module Gas = struct
   include Gas
 
   let consume (ctxt : Context.t) cost =
-    print_endline @@ "allocations: " ^ Z.to_string @@ cost.allocations;
+    (* print_endline @@ "allocations: " ^ Z.to_string @@ cost.allocations;
     print_endline @@ "steps: " ^ Z.to_string @@ cost.steps;
     print_endline @@ "reads: " ^ Z.to_string @@ cost.reads;
     print_endline @@ "writes: " ^ Z.to_string @@ cost.writes;
     print_endline @@ "bytes_read: " ^ Z.to_string @@ cost.bytes_read;
     print_endline @@ "bytes_written: " ^ Z.to_string @@ cost.bytes_written;
-    print_endline "---------------";
+    print_endline "---------------"; *)
     consume_gas ctxt.block_gas ctxt.gas cost >>? fun (block_gas, operation_gas) ->
       ok { ctxt with block_gas = block_gas ; gas = operation_gas }
   
@@ -1347,7 +1347,7 @@ let rec parse_data
     | Unit_t _, Prim (loc, D_Unit, l, _) ->
         traced (fail (Invalid_arity (loc, D_Unit, 0, List.length l)))
     | Unit_t _, expr ->
-        traced (fail (unexpected expr [] Constant_namespace [ D_Unit ]))
+        traced (fail (unexpected expr [] Constant_namespace [ D_Unit ])) 
     (* Booleans *)
     | Bool_t ty_name, Prim (loc, D_True, [], annot) ->
         check_const_type_annot loc annot ty_name [] >>=? fun () ->
@@ -1510,8 +1510,7 @@ let rec parse_data
         check_const_type_annot loc annot ty_name [af; bf] >>=? fun () ->
         Lwt.return (Gas.consume ctxt Typecheck_costs.pair) >>=? fun ctxt ->
         traced @@
-        (print_endline "6";
-        parse_data ?type_logger ctxt ta va) >>=? fun (va, ctxt) ->
+        parse_data ?type_logger ctxt ta va >>=? fun (va, ctxt) ->
         parse_data ?type_logger ctxt tb vb >>=? fun (vb, ctxt) ->
         return ((va, vb), ctxt)
     | Pair_t _, Prim (loc, D_Pair, l, _) ->
@@ -1523,8 +1522,7 @@ let rec parse_data
         check_const_type_annot loc annot ty_name [lconstr]>>=? fun () ->
         Lwt.return (Gas.consume ctxt Typecheck_costs.union) >>=? fun ctxt ->
         traced @@
-        (print_endline "7";
-        parse_data ?type_logger ctxt tl v )>>=? fun (v, ctxt) ->
+        parse_data ?type_logger ctxt tl v >>=? fun (v, ctxt) ->
         return (L v, ctxt)
     | Union_t _, Prim (loc, D_Left, l, _) ->
         fail @@ Invalid_arity (loc, D_Left, 1, List.length l)
@@ -1532,8 +1530,7 @@ let rec parse_data
         check_const_type_annot loc annot ty_name [rconstr] >>=? fun () ->
         Lwt.return (Gas.consume ctxt Typecheck_costs.union) >>=? fun ctxt ->
         traced @@
-        (print_endline "8";
-        parse_data ?type_logger ctxt tr v) >>=? fun (v, ctxt) ->
+        parse_data ?type_logger ctxt tr v >>=? fun (v, ctxt) ->
         return (R v, ctxt)
     | Union_t _, Prim (loc, D_Right, l, _) ->
         fail @@ Invalid_arity (loc, D_Right, 1, List.length l)
@@ -2967,7 +2964,7 @@ let parse_script
       (fun () ->
          Lwt.return @@ serialize_ty_for_error ctxt storage_type >>|? fun (storage_type, _ctxt) ->
          Ill_typed_data (None, storage, storage_type))
-      (print_endline "1"; parse_data ?type_logger ctxt storage_type (root storage)) >>=? fun (storage, ctxt) ->
+       (parse_data ?type_logger ctxt storage_type (root storage)) >>=? fun (storage, ctxt) ->
     trace
       (Ill_typed_contract (code, []))
       (parse_returning (Toplevel { storage_type ; param_type = arg_type })
@@ -3020,7 +3017,7 @@ let typecheck_data
       (fun () ->
          Lwt.return @@ serialize_ty_for_error ctxt exp_ty >>|? fun (exp_ty, _ctxt) ->
          Ill_typed_data (None, data, exp_ty))
-      (print_endline "2"; parse_data ?type_logger ctxt exp_ty (root data)) >>=? fun (_, ctxt) ->
+       (parse_data ?type_logger ctxt exp_ty (root data)) >>=? fun (_, ctxt) ->
     return ctxt
 
 (* ---- Unparsing (Typed IR -> Untyped expressions) --------------------------*)
@@ -3198,8 +3195,7 @@ let rec unparse_data
 and unparse_code ctxt mode = function
   | Prim (loc, I_PUSH, [ ty ; data ], annot) ->
       Lwt.return (parse_ty ctxt ~allow_big_map:false ~allow_operation:false ty) >>=? fun (Ex_ty t, ctxt) ->
-      (print_endline "3";
-      parse_data ctxt t data) >>=? fun (data, ctxt) ->
+      parse_data ctxt t data >>=? fun (data, ctxt) ->
       unparse_data ctxt mode t data >>=? fun (data, ctxt) ->
       Lwt.return (Gas.consume ctxt (Unparse_costs.prim_cost 2 annot)) >>=? fun ctxt ->
       return (Prim (loc, I_PUSH, [ ty ; data ], annot), ctxt)
@@ -3275,9 +3271,8 @@ let big_map_get ctxt contract key { diff ; key_type ; value_type } =
         ctxt contract hash >>=? begin function
         | (ctxt, None) -> return (None, ctxt)
         | (ctxt, Some value) ->
-            (print_endline "4";
             parse_data ctxt value_type
-              (Micheline.root value)) >>=? fun (x, ctxt) ->
+              (Micheline.root value) >>=? fun (x, ctxt) ->
             return (Some x, ctxt)
       end
 

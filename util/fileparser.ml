@@ -21,6 +21,7 @@ type execution_context = {
   self : int;
   amount : Tez.t;
   parameter : string ;
+  storage : string;
 }
 
 let reconstruct_comparable_type
@@ -75,64 +76,74 @@ let get_toplevel_object ?environment toplevel_path claimed_storage_type claimed_
   contextualize ?environment ~msg:"toplevel" @@ fun {tezos_context = context; _} ->
   let toplevel_expr = Cast.tl_of_string toplevel_str in
   let (param_ty_node, storage_ty_node, code_field) =
-    force_ok_alpha ~msg:"parsing toplevel" @@
+    force_ok ~msg:"parsing toplevel" @@
     parse_toplevel toplevel_expr in
   let (Ex_ty param_type, _) =
-    force_ok_alpha ~msg:"parse arg ty" @@
+    force_ok ~msg:"parse arg ty" @@
     Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_ty_node in
   let (Ex_ty storage_type, _) =
-    force_ok_alpha ~msg:"parse storage ty" @@
+    force_ok ~msg:"parse storage ty" @@
     parse_storage_ty context storage_ty_node in
-  let _ = force_ok_alpha ~msg:"storage eq" @@ Script_ir_translator.ty_eq context storage_type claimed_storage_type in
-  let _ = force_ok_alpha ~msg:"param eq" @@ Script_ir_translator.ty_eq context param_type claimed_parameter_type in
+  let _ = force_ok ~msg:"storage eq" @@ Script_ir_translator.ty_eq context storage_type claimed_storage_type in
+  let _ = force_ok ~msg:"param eq" @@ Script_ir_translator.ty_eq context param_type claimed_parameter_type in
   let param_type_full = Pair_t ((claimed_parameter_type, None, None),
                                 (claimed_storage_type, None, None), None) in
   let ret_type_full =
     Pair_t ((List_t (Operation_t None, None), None, None),
             (claimed_storage_type, None, None), None) in
   parse_returning (Toplevel { storage_type = claimed_storage_type ; param_type = claimed_parameter_type })
-    context (param_type_full, None) ret_type_full code_field >>=?? fun (code, _) ->
+    context (param_type_full, None) ret_type_full code_field >>=? fun (code, _) ->
   return {
     param_type = claimed_parameter_type;
     storage_type = claimed_storage_type;
     code ;
   }
 
-let convert_string_value_to_type str = 
-  let node = Cast.expr_of_string str in
-    parse_ty Context.default_context ~allow_big_map:false ~allow_operation:false
-   @@ Micheline.root node
+let typeof_node (node : ('l, Michelson_v1_primitives.prim) Micheline.node) = 
+  match node with
+  | Prim (_, p, _, _) -> 
+    begin
+    match p with
+    | D_Unit -> "got it"
+    | _ -> "nvm"
+    end
+  | _ -> "other"
 
-(* let get_toplevel_and_execute _ context toplevel_path execution_context storage =
-  get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
-  let (Ex_ty param_type, _) =
-    force_ok_alpha ~msg:"parse arg ty" @@
-    Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_type in
-  let (Ex_ty storage_type, _) =
-    force_ok_alpha ~msg:"parse storage ty" @@
-    parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
-  let (Ex_ty claimed_parameter_type, _) =
-    force_ok_alpha ~msg:"parsing actual parameter type" @@
-    convert_string_value_to_type execution_context.parameter in
-  let _ = force_ok_alpha ~msg:"param eq" @@ Script_ir_translator.ty_eq context param_type claimed_parameter_type in
-  let param_type_full = Pair_t ((claimed_parameter_type, None, None),
-                                (storage_type, None, None), None) in
-  let ret_type_full =
-    Pair_t ((List_t (Operation_t None, None), None, None),
-            (storage_type, None, None), None) in
-  parse_returning (Toplevel { storage_type = storage_type ; param_type = claimed_parameter_type })
-    context (param_type_full, None) ret_type_full code_field >>=?? fun (code, _) -> 
-  Misc.init 10 >>=? fun (_, contracts, _) ->
-  match code with
-  | Lam (_, expr) ->
-    Script_interpreter.execute context Readable
-    ~source:(List.nth contracts execution_context.source)
-    ~payer:(List.nth contracts execution_context.payer)
-    ~arg_type:(claimed_parameter_type)
-    ~self:((List.nth contracts execution_context.self), code)
-    ~amount:(execution_context.amount)
-    ~parameter:(Cast.expr_of_string execution_context.parameter)
-    ~storage:storage
-    ~storage_ty:storage_type
-  >>=? fun (result) -> 
-    return ok ("hello") *)
+let convert_string_value_to_type str = 
+  let node = Micheline.root @@ Cast.expr_of_string str in
+    let ty = parse_ty Context.default_context ~allow_big_map:false ~allow_operation:false node in
+      ty
+
+let get_toplevel_and_execute _ context toplevel_path execution_context =
+  Lwt_main.run @@ (
+      get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
+    let (Ex_ty param_type, _) =
+      force_ok ~msg:"parse arg ty" @@
+      Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_type in
+    let (Ex_ty storage_type, _) =
+      force_ok ~msg:"parse storage ty" @@
+      parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
+    let param_type_full = Pair_t ((param_type, None, None),
+                                  (storage_type, None, None), None) in
+    let ret_type_full =
+      Pair_t ((List_t (Operation_t None, None), None, None),
+              (storage_type, None, None), None) in
+    parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
+      context (param_type_full, None) ret_type_full code_field >>=? fun (code, _) -> 
+    Misc.init 10 >>=? fun (_, contracts, _) ->
+    (parse_data context storage_type @@ Cast.node_of_string execution_context.storage) >>=?
+    fun (storage, context) ->
+    match code with
+    | Lam (_, _) ->
+      Script_interpreter.execute context Readable
+      ~source:(List.nth contracts execution_context.source)
+      ~payer:(List.nth contracts execution_context.payer)
+      ~arg_type:(param_type)
+      ~self:((List.nth contracts execution_context.self), code)
+      ~amount:(execution_context.amount)
+      ~parameter:(Cast.expr_of_string execution_context.parameter)
+      ~storage:storage
+      ~storage_ty:storage_type
+    >>=? fun (result) -> 
+      return result
+  )

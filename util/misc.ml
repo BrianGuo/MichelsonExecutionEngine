@@ -17,32 +17,41 @@ type environment = {
 
 type error += Ecoproto_error of Error_monad.error
 
+module Wrapped_error_monad = struct
+  type unwrapped = Error_monad.error = ..
+  include (Error_monad : Error_monad_sig.S with type error := unwrapped)
+  let unwrap = function
+    | Ecoproto_error ecoerror -> Some ecoerror
+    | _ -> None
+  let wrap ecoerror =
+    Ecoproto_error ecoerror
+end
+
+let () =
+  let id = Format.asprintf "proto.%s.wrapper" "testing" in
+  register_wrapped_error_kind
+    (module Wrapped_error_monad)
+    ~id ~title: ("Error returned by protocol " ^ "testing")
+    ~description: ("Wrapped error for economic protocol " ^ "testing" ^ ".")
+
 let to_string err =
   let json = Error_monad.json_of_error err in
   Data_encoding.Json.to_string json
 
+let to_string_list err =
+  Format.printf "%a" Error_monad.pp_print_error err
+
 let print err =
   Format.printf "%s\n" @@ to_string err
-
-let wrap_error = function
-      | Ok _ as ok -> ok
-      | Error errors -> Error (List.map (fun error -> Ecoproto_error error) errors)
-
-let (>>=??) a f =
-  a >>= fun a ->
-  match wrap_error a with
-  | Ok result -> f result
-  | Error errs -> Lwt.return (Error errs)
 
 
 let force_ok ?(msg = "") = function
   | Ok x -> x
   | Error errs ->
     Format.printf "Errors :\n";
-    List.iter print errs ;
+    to_string_list errs;
     raise @@ Failure ("force_ok : " ^ msg)
 
-let force_ok_alpha ~msg a = force_ok ~msg @@ wrap_error a
 
 let init ?(slow=false) (* ?preserved_cycles ?endorsers_per_block ?commitments *) n =
   let accounts = Account.generate_accounts n in
