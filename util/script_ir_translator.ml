@@ -3257,7 +3257,7 @@ let hash_data ctxt typ data =
 let big_map_mem ctxt contract key { diff ; key_type ; _ } =
   match map_get key diff with
   | None -> hash_data ctxt key_type key >>=? fun (hash, ctxt) ->
-      Contract.Big_map.mem ctxt contract hash >>=? fun (ctxt, res) ->
+      Context.Big_map.mem ctxt contract hash >>=? fun (ctxt, res) ->
       return (res, ctxt)
   | Some None -> return (false, ctxt)
   | Some (Some _) -> return (true, ctxt)
@@ -3267,7 +3267,7 @@ let big_map_get ctxt contract key { diff ; key_type ; value_type } =
   | Some x -> return (x, ctxt)
   | None ->
       hash_data ctxt key_type key >>=? fun (hash, ctxt) ->
-       Contract.Big_map.get_opt
+       Context.Big_map.get_opt
         ctxt contract hash >>=? begin function
         | (ctxt, None) -> return (None, ctxt)
         | (ctxt, Some value) ->

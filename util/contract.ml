@@ -21,15 +21,16 @@ include Compare.Make(struct
         | Originated _, Implicit _ -> 1
   end)
 
-type big_map_diff_item = {
-  diff_key : Script.expr;
-  diff_key_hash : Script.expr_hash;
-  diff_value : Script.expr option;
-}
-
-type big_map_diff = big_map_diff_item list
-
 let implicit_contract id = Implicit id 
+
+type big_map_diff_item = 
+  Context_type.big_map_diff_item = {
+    diff_key : Script.expr;
+    diff_key_hash : Script.expr_hash;
+    diff_value : Script.expr option;
+  }
+
+type big_map_diff = Context_type.big_map_diff 
 
 let origination_nonce_encoding =
   let open Data_encoding in

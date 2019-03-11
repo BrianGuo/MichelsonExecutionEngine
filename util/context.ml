@@ -69,3 +69,39 @@ let initialize_account_balance ~index ~balance ctxt =
     | None -> None 
   in
   {ctxt with storage_map = Storage_map_mod.update contract_hash update_balance_fun ctxt.storage_map }
+
+module Big_map = struct
+  let mem ctxt contract hash =
+    begin
+    match Storage_map_mod.find_opt contract ctxt.storage_map with
+    | Some contr ->
+      begin
+      match contr.data_map_opt with
+      | Some storage -> 
+        return @@ (ctxt, List.exists (fun big_map -> big_map.diff_key_hash = hash) storage)
+      | None -> return (ctxt, false)
+      end
+    | None -> return (ctxt, false)
+    end
+  
+  let get_opt ctxt contract hash = 
+    begin
+    match Storage_map_mod.find_opt contract ctxt.storage_map with
+    | Some contr ->
+      begin
+      match contr.data_map_opt with
+      | Some storage -> 
+        let mapped_value_opt = 
+          List.find_opt (fun big_map -> big_map.diff_key_hash = hash) storage
+        in
+        begin match mapped_value_opt with 
+        | Some diff_item -> 
+            return (ctxt, diff_item.diff_value)
+        | None ->
+            return (ctxt, None)
+        end
+      | None -> return (ctxt, None)
+      end
+    | None -> return (ctxt, None)
+    end
+end

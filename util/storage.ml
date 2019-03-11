@@ -7,7 +7,8 @@ let init_contracts_storage contracts =
       k 
       {
         script=None;
-        balance=Int64.of_int 20
+        balance=Int64.of_int 20;
+        data_map_opt = None;
       }
       m
   in 

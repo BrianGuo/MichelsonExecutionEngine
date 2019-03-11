@@ -24,6 +24,14 @@ module Operation_hash = struct
   end)
 end
 
+type big_map_diff_item = {
+  diff_key : Script.expr;
+  diff_key_hash : Script.expr_hash;
+  diff_value : Script.expr option;
+}
+
+type big_map_diff = big_map_diff_item list
+
 type origination_nonce =
   { operation_hash: Operation_hash.t ;
     origination_index: int32 }
@@ -43,5 +51,6 @@ end)
 type contract_storage = {
   script: Script.t option;
   balance: int64;
+  data_map_opt: big_map_diff option;
 }
 
