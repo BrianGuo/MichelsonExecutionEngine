@@ -45,9 +45,9 @@ let x =
         print_endline (print_test result.storage);
         Lwt.return @@ ok ("hello"))
 
-let result = 
+let result  = 
   let context = Context.default_context in 
-    Misc.force_ok ~msg:"this is the forceok message" @@ Fileparser.get_toplevel_and_execute () context "helloworld.tz" 
+    Fileparser.get_toplevel_and_execute context "helloworld.tz" 
     {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "Unit"; storage = "\"\""}
   
 let () =

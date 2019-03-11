@@ -3,7 +3,6 @@ open Script_ir_translator
 open Script_ir_nodes
 open Tezos_error_monad
 open Error_monad
-open Tezos_micheline
 
 type ex_ty = Script_ir_nodes.ex_ty
 
@@ -14,15 +13,6 @@ type ('param, 'storage) toplevel = {
 }
 
 type ex_toplevel = Ex_toplevel : ('a, 'b) toplevel -> ex_toplevel
-
-type execution_context = {
-  source : int;
-  payer : int;
-  self : int;
-  amount : Tez.t;
-  parameter : string ;
-  storage : string;
-}
 
 let reconstruct_comparable_type
   : type a. a comparable_ty -> a comparable_ty
@@ -99,23 +89,9 @@ let get_toplevel_object ?environment toplevel_path claimed_storage_type claimed_
     code ;
   }
 
-let typeof_node (node : ('l, Michelson_v1_primitives.prim) Micheline.node) = 
-  match node with
-  | Prim (_, p, _, _) -> 
-    begin
-    match p with
-    | D_Unit -> "got it"
-    | _ -> "nvm"
-    end
-  | _ -> "other"
-
-let convert_string_value_to_type str = 
-  let node = Micheline.root @@ Cast.expr_of_string str in
-    let ty = parse_ty Context.default_context ~allow_big_map:false ~allow_operation:false node in
-      ty
-
-let get_toplevel_and_execute _ context toplevel_path execution_context =
-  Lwt_main.run @@ (
+let get_toplevel_and_execute context toplevel_path execution_context =
+  try 
+    Lwt_main.run @@ (
       get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
     let (Ex_ty param_type, _) =
       force_ok ~msg:"parse arg ty" @@
@@ -130,20 +106,17 @@ let get_toplevel_and_execute _ context toplevel_path execution_context =
               (storage_type, None, None), None) in
     parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
       context (param_type_full, None) ret_type_full code_field >>=? fun (code, _) -> 
-    Misc.init 10 >>=? fun (_, contracts, _) ->
-    (parse_data context storage_type @@ Cast.node_of_string execution_context.storage) >>=?
-    fun (storage, context) ->
-    match code with
-    | Lam (_, _) ->
-      Script_interpreter.execute context Readable
-      ~source:(List.nth contracts execution_context.source)
-      ~payer:(List.nth contracts execution_context.payer)
-      ~arg_type:(param_type)
-      ~self:((List.nth contracts execution_context.self), code)
-      ~amount:(execution_context.amount)
-      ~parameter:(Cast.expr_of_string execution_context.parameter)
-      ~storage:storage
-      ~storage_ty:storage_type
-    >>=? fun (result) -> 
-      return result
-  )
+    Script_interpreter.execute_with_execution_context 
+      context 
+      Readable 
+      code 
+      execution_context 
+      ~arg_type:param_type 
+      ~storage_type:storage_type
+  ) |> Misc.force_ok ~msg:"Execution Failed"
+  with 
+    | Failure f ->
+      if f = "nth" then 
+        print_endline ("Failed List.nth failure");
+        print_endline "Maybe you forgot to initialize the storage?";
+        raise (Failure f)

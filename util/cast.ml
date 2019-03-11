@@ -24,7 +24,11 @@ let tl_of_string str =
 
   let node_of_string str =
     Micheline.root @@ expr_of_string str
-
+  
+  let convert_string_value_to_type str = 
+    let node = Micheline.root @@ expr_of_string str in
+      Script_ir_translator.parse_ty Context.default_context ~allow_big_map:false ~allow_operation:false node
+  
   let node_to_string (node:_ Micheline.node) =
     let stripped = Micheline.strip_locations node in
     let print_node = Micheline_printer.printable Michelson_v1_primitives.string_of_prim stripped in

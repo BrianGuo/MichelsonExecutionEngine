@@ -8,6 +8,7 @@ open Michelson_v1_primitives
 open Script_ir_translator
 open Script_ir_nodes
 open Error_registration
+open Execution_context
 
 type execution_trace =
   (Script.location * Gas.t * (Script.expr * string option) list) list
@@ -796,3 +797,20 @@ let execute ctxt mode ~source ~payer ~self:(self, script) ~arg_type ~parameter ~
         return (Some big_map_diff, ctxt)
   end >>=? fun (big_map_diff, ctxt) -> *)
   return { ctxt ; storage ; operations }
+
+let execute_with_execution_context ctxt mode code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
+    parse_data ctxt storage_type @@ Cast.node_of_string execution_context.storage >>=?
+    fun (storage, context) ->
+        let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
+        execute 
+            context 
+            mode 
+            ~source:(List.nth contracts execution_context.source)
+            ~payer:(List.nth contracts execution_context.payer)
+            ~arg_type:arg_type
+            ~self:((List.nth contracts execution_context.self), code)
+            ~amount:(execution_context.amount)
+            ~parameter:(Cast.expr_of_string execution_context.parameter)
+            ~storage:storage
+            ~storage_ty:storage_type
+        
