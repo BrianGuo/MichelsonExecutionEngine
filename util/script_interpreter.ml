@@ -757,7 +757,7 @@ and interp
     return (ret, ctxt)
 
 and execute ?log ctxt mode ~source ~payer ~self ~arg_type ~storage ~storage_ty script amount arg :
-  (Script.expr * packed_internal_operation list * Context.t ) tzresult Lwt.t =
+  (Script.expr * packed_internal_operation list * Context.t * Script_ir_nodes.ex_big_map option ) tzresult Lwt.t =
   trace
     (Bad_contract_parameter self)
     (parse_data ctxt arg_type arg)  >>=? fun (arg, ctxt) ->
@@ -767,36 +767,38 @@ and execute ?log ctxt mode ~source ~payer ~self ~arg_type ~storage ~storage_ty s
   >>=? fun ((ops, sto), ctxt) ->
   trace Cannot_serialize_storage
     (unparse_data ctxt mode storage_ty sto) >>=? fun (storage, ctxt) ->
-  return (Micheline.strip_locations storage, ops, ctxt)
+  return (Micheline.strip_locations storage, ops, ctxt,
+        Script_ir_translator.extract_big_map storage_ty sto)
 
 type execution_result =
   { ctxt : Context.t ;
     storage : Script.expr ;
+    big_map_diff : Contract.big_map_diff option ;
     operations : packed_internal_operation list }
 
 let trace ctxt mode ~source ~payer ~self:(self, script) ~arg_type ~storage ~storage_ty ~parameter ~amount =
   let log = ref [] in
   execute ~log ctxt mode ~source ~payer ~storage ~storage_ty ~arg_type ~self script amount (Micheline.root parameter)
-  >>=? fun (storage, operations, ctxt) ->
-  (* begin match big_map with
+  >>=? fun (storage, operations, ctxt, big_map) ->
+  begin match big_map with
     | None -> return (None, ctxt)
     | Some big_map ->
         Script_ir_translator.diff_of_big_map ctxt mode big_map >>=? fun (big_map_diff, ctxt) ->
         return (Some big_map_diff, ctxt)
-  end >>=? fun (big_map_diff, ctxt) -> *)
+  end >>=? fun (big_map_diff, ctxt) -> 
   let trace = List.rev !log in
-  return ({ ctxt ; storage ; operations }, trace)
+  return ({ ctxt ; storage ; big_map_diff; operations }, trace)
 
 let execute ctxt mode ~source ~payer ~self:(self, script) ~arg_type ~parameter ~storage ~storage_ty ~amount =
   execute ctxt mode ~source ~payer ~self ~arg_type ~storage ~storage_ty script amount (Micheline.root parameter)
-  >>=? fun (storage, operations, ctxt) ->
-  (* begin match big_map with
+  >>=? fun (storage, operations, ctxt, big_map) ->
+  begin match big_map with
     | None -> return (None, ctxt)
     | Some big_map ->
         Script_ir_translator.diff_of_big_map ctxt mode big_map >>=? fun (big_map_diff, ctxt) ->
         return (Some big_map_diff, ctxt)
-  end >>=? fun (big_map_diff, ctxt) -> *)
-  return { ctxt ; storage ; operations }
+  end >>=? fun (big_map_diff, ctxt) ->
+  return { ctxt ; storage ; big_map_diff; operations }
 
 let execute_with_execution_context ctxt mode code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
     parse_data ctxt storage_type @@ Cast.node_of_string execution_context.storage >>=?

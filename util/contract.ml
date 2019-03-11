@@ -27,6 +27,8 @@ type big_map_diff_item = {
   diff_value : Script.expr option;
 }
 
+type big_map_diff = big_map_diff_item list
+
 let implicit_contract id = Implicit id 
 
 let origination_nonce_encoding =

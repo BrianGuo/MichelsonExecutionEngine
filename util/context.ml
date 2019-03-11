@@ -53,12 +53,12 @@ let get_balance ctxt contract =
   return @@ Tez.of_mutez_exn balance
 
 
-(* let init_contracts n ctxt =
+let init_contracts n ctxt =
   let accounts = Account.generate_accounts n in
   let contracts = List.map (fun (a, _) ->
     Contract.implicit_contract Account.(a.pkh)) accounts in
   let map = Storage.init_contracts_storage contracts in
-    {ctxt with storage = map} *)
+    {ctxt with storage_map = map}
 
 let initialize_account_balance ~index ~balance ctxt =
   let bindings = Storage_map_mod.bindings ctxt.storage_map in

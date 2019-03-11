@@ -46,7 +46,7 @@ let x =
         Lwt.return @@ ok ("hello"))
 
 let result  = 
-  let context = Context.default_context in 
+  let context = Context.default_context |> Context.init_contracts 10 in 
     Fileparser.get_toplevel_and_execute context "helloworld.tz" 
     {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "Unit"; storage = "\"\""}
   
