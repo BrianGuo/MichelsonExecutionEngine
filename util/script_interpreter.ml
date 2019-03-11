@@ -644,7 +644,7 @@ let rec step
     | Create_account,
       Item (  manager  , Item (  delegate , Item ( delegatable , Item ( credit , rest)))) ->
         Lwt.return (Gas.consume ctxt Interp_costs.create_account) >>=? fun ctxt ->
-        Contract.fresh_contract_from_current_nonce ctxt >>=? fun (ctxt, contract) ->
+        Context.fresh_contract_from_current_nonce ctxt >>=? fun (ctxt, contract) ->
         let operation =
           Origination
              { credit ; manager ; delegate ; preorigination = Some contract ;
@@ -673,7 +673,7 @@ let rec step
                        Prim (0, K_code, [ Micheline.root code ], []) ])) in
         unparse_data ctxt Optimized storage_type init >>=? fun (storage, ctxt) ->
         let storage  = Micheline.strip_locations storage in
-        Contract.fresh_contract_from_current_nonce ctxt >>=? fun (ctxt, contract) ->
+        Context.fresh_contract_from_current_nonce ctxt >>=? fun (ctxt, contract) ->
         let operation =
           Origination
             { credit ; manager ; delegate ; preorigination = Some contract ;
@@ -692,7 +692,7 @@ let rec step
         logged_return (Item (Internal_operation { source = self ; operation ; nonce }, rest), ctxt)
     | Balance, rest ->
         Lwt.return (Gas.consume ctxt Interp_costs.balance) >>=? fun ctxt ->
-        Contract.get_balance ctxt self >>=? fun balance ->
+        Context.get_balance ctxt self >>=? fun balance ->
         logged_return (Item (balance, rest), ctxt)
     | Now, rest ->
         Lwt.return (Gas.consume ctxt Interp_costs.now) >>=? fun ctxt ->

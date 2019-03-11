@@ -2805,13 +2805,13 @@ and parse_contract
     (Context.t * arg typed_contract) tzresult Lwt.t
   = fun ctxt loc arg contract ->
     Lwt.return @@ Gas.consume ctxt Typecheck_costs.contract_exists >>=? fun ctxt ->
-    Contract.exists ctxt contract >>=? function
+    Context.exists ctxt contract >>=? function
     | false -> fail (Invalid_contract (loc, contract))
     | true ->
         Lwt.return @@ Gas.consume ctxt Typecheck_costs.get_script >>=? fun ctxt ->
         trace
           (Invalid_contract (loc, contract)) @@
-        Contract.get_script ctxt contract >>=? fun (ctxt, script) -> match script with
+        Context.get_script ctxt contract >>=? fun (ctxt, script) -> match script with
         | None ->
             Lwt.return
               (ty_eq ctxt arg (Unit_t None) >>? fun (Eq, ctxt) ->
@@ -2836,13 +2836,13 @@ and parse_contract_for_script
     (Context.t * arg typed_contract option) tzresult Lwt.t
   = fun ctxt loc arg contract ->
     Lwt.return @@ Gas.consume ctxt Typecheck_costs.contract_exists >>=? fun ctxt ->
-    Contract.exists ctxt contract >>=? function
+    Context.exists ctxt contract >>=? function
     | false -> return (ctxt, None)
     | true ->
         Lwt.return @@ Gas.consume ctxt Typecheck_costs.get_script >>=? fun ctxt ->
         trace
           (Invalid_contract (loc, contract)) @@
-        Contract.get_script ctxt contract >>=? fun (ctxt, script) -> match script with (* can only fail because of gas *)
+        Context.get_script ctxt contract >>=? fun (ctxt, script) -> match script with (* can only fail because of gas *)
         | None ->
             Lwt.return
               (match ty_eq ctxt arg (Unit_t None) with

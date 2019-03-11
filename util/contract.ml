@@ -99,32 +99,6 @@ let of_b58check s =
               | Error _ -> Json.cannot_destruct "Invalid contract notation.")
            string)
 
-
-let exists (ctxt : Context.t) contract = 
-  Lwt.return @@ 
-  ok @@ 
-  Context_type.Storage_map_mod.mem contract ctxt.storage_map
-
-let get_script
-  : Context.t -> 'b -> (Context.t * Script.t option) tzresult Lwt.t 
-  = fun c _ ->
-  return (c, None)
-
-let increment_origination_nonce (ctxt : Context.t) =
-  match ctxt.origination_nonce with
-  | None -> error Undefined_operation_nonce
-  | Some origination_nonce ->
-  let origination_index = Int32.succ origination_nonce.origination_index in
-  let new_nonce = {origination_nonce with origination_index} in
-  ok ({ctxt with origination_nonce = Some new_nonce}, new_nonce)
-
-let fresh_contract_from_current_nonce ctxt =
-    Lwt.return (increment_origination_nonce ctxt) >>=? fun (c, nonce) ->
-    return (c, originated_contract nonce)
-    
-let get_balance ctxt contract = 
-  Lwt.return @@ ok @@ Tez.of_mutez_exn @@ Storage.get_balance ctxt contract
-
 module Big_map = struct
   let mem ctxt _ _ = Lwt.return @@ ok (ctxt, false)
 

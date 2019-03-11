@@ -1,5 +1,5 @@
 open Context_type
-
+open Tezos_error_monad.Error_monad
 type t =
   { 
     block: Block.t;
@@ -22,6 +22,36 @@ let with_block_gas gas_count ctxt =
 
 let with_maximum_gas gas_limit ctxt =
   {ctxt with gas = Limited {remaining = (Z.of_int gas_limit)} }
+
+let exists ctxt contract =
+  return @@ Context_type.Storage_map_mod.mem contract ctxt.storage_map
+
+let get_script ctxt contract =
+  let script_opt = Storage_map_mod.find_opt contract ctxt.storage_map in
+  match script_opt with
+  | Some n -> return (ctxt, (n.script))
+  | None -> return (ctxt, None)
+
+let increment_origination_nonce ctxt =
+  match ctxt.origination_nonce with
+  | None -> error Contract.Undefined_operation_nonce
+  | Some origination_nonce ->
+  let origination_index = Int32.succ origination_nonce.origination_index in
+  let new_nonce = {origination_nonce with origination_index} in
+  ok ({ctxt with origination_nonce = Some new_nonce}, new_nonce)
+
+let fresh_contract_from_current_nonce ctxt =
+  Lwt.return (increment_origination_nonce ctxt) >>=? fun (c, nonce) ->
+    return (c, Contract.originated_contract nonce)
+
+let get_balance ctxt contract = 
+  let balance = 
+  match  Storage_map_mod.find_opt contract ctxt.storage_map with 
+  | Some stored_data -> stored_data.balance
+  | None -> Int64.zero
+  in
+  return @@ Tez.of_mutez_exn balance
+
 
 (* let init_contracts n ctxt =
   let accounts = Account.generate_accounts n in
