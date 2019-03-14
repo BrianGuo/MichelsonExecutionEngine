@@ -88,35 +88,3 @@ let get_toplevel_object ?environment toplevel_path claimed_storage_type claimed_
     storage_type = claimed_storage_type;
     code ;
   }
-
-let get_toplevel_and_execute context toplevel_path execution_context =
-  try 
-    Lwt_main.run @@ (
-      get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
-    let (Ex_ty param_type, _) =
-      force_ok ~msg:"parse arg ty" @@
-      Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_type in
-    let (Ex_ty storage_type, _) =
-      force_ok ~msg:"parse storage ty" @@
-      parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
-    let param_type_full = Pair_t ((param_type, None, None),
-                                  (storage_type, None, None), None) in
-    let ret_type_full =
-      Pair_t ((List_t (Operation_t None, None), None, None),
-              (storage_type, None, None), None) in
-    parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
-      context (param_type_full, None) ret_type_full code_field >>=? fun (code, _) -> 
-    Script_interpreter.execute_with_execution_context 
-      context 
-      Readable 
-      code 
-      execution_context 
-      ~arg_type:param_type 
-      ~storage_type:storage_type
-  ) |> Misc.force_ok ~msg:"Execution Failed"
-  with 
-    | Failure f ->
-      if f = "nth" then 
-        print_endline ("Failed List.nth failure");
-        print_endline "Maybe you forgot to initialize the storage?";
-        raise (Failure f)

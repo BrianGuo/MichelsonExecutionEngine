@@ -7,7 +7,7 @@ type t = {
   storage : string;
 }
 
-let defaul_execution_context = {
+let default_execution_context = {
   source = 0;
   payer = 0;
   self = 0;

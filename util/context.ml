@@ -17,6 +17,9 @@ let default_context = {
   block_gas = Z.zero;
 }
 
+let get_contracts_and_storage ctxt = 
+  Storage_map_mod.bindings ctxt.storage_map
+  
 let with_block_gas gas_count ctxt =
   {ctxt with block_gas = Z.of_int gas_count}
 

@@ -47,10 +47,11 @@ let x =
 
 let result  = 
   let context = Context.default_context |> Context.init_contracts 10 in 
-    Fileparser.get_toplevel_and_execute context "helloworld.tz" 
+    Engine.get_toplevel_and_step context "helloworld.tz" 
     {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "Unit"; storage = "\"\""}
+
   
 let () =
-  print_endline (print_test result.storage)
+  print_endline result
   
 
