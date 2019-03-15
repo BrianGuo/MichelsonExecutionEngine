@@ -79,7 +79,7 @@ let data_to_string ty data =
 
 open Script_ir_nodes
 open Script_interpreter
-type ex_typed_stack =
+type ex_typed_stack = (* todo: move this out of cast; why is this in here? *)
   Ex_typed_stack : ('a stack_ty * 'a stack) -> ex_typed_stack
 
 let stack_to_string stack_ty stack =
