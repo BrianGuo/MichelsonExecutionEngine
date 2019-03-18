@@ -13,6 +13,7 @@ Todos:
 - Gas counts not properly accounted for
     - Gas counts now properly counted
 - Stack trace not pretty printed in a desirable way.
+    - Currently in the process of making stack traces print meaningful messages
 - Build out API Docs
 - File structure reorganization
 - build guide (add to this readme?)
@@ -25,3 +26,4 @@ Todos:
 - Converting ocaml arguments to parameters
 - Easier way to pass in arguments instead of current verbose way
     - desirable way is "with \_" function (i.e. with_self self, with_currency currency)
+    - Context easily modified in this manner
