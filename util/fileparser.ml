@@ -3,6 +3,9 @@ open Script_ir_translator
 open Script_ir_nodes
 open Tezos_error_monad
 open Error_monad
+open Execution_context
+open Script_interpreter 
+open Program
 
 type ex_ty = Script_ir_nodes.ex_ty
 
@@ -88,3 +91,29 @@ let get_toplevel_object ?environment toplevel_path claimed_storage_type claimed_
     storage_type = claimed_storage_type;
     code ;
   }
+
+  let get_initial_program context toplevel_path execution_context : ex_program_state =
+    Lwt_main.run @@ (
+        get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
+      let (Ex_ty param_type, _) =
+        force_ok ~msg:"parse arg ty" @@
+        Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_type in
+      let (Ex_ty storage_type, _) =
+        force_ok ~msg:"parse storage ty" @@
+        parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
+      let param_type_full = Pair_t ((param_type, None, None),
+                                    (storage_type, None, None), None) in
+      let ret_type_full =
+        Pair_t ((List_t (Operation_t None, None), None, None),
+                (storage_type, None, None), None) in
+      parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
+        context (param_type_full, None) ret_type_full code_field >>=? 
+      fun (Lam (desc, _), _) -> 
+      parse_data context param_type @@ Cast.node_of_string execution_context.parameter
+      >>=? fun (param_val, _) ->
+      parse_data context storage_type @@ Cast.node_of_string execution_context.storage 
+      >>=? fun (storage_val, _) ->
+      let stack = Item ((param_val, storage_val), Empty) in
+      let stack_ty = Item_t (param_type_full, Empty_t, None) in
+      return @@ Program.Ex_program_state ([Ex_descr desc ], stack, stack_ty)
+    ) |> Misc.force_ok ~msg:"Execution Failed"
