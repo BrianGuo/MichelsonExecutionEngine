@@ -124,13 +124,51 @@ let data_to_string ty data =
       | Cons_list -> prim I_CONS
       | If_cons (a, b) -> prim ~children:[Ex_descr a ; Ex_descr b] I_IF_CONS
       | List_iter _ -> prim I_ITER
+      | List_map _ -> prim I_MAP
+      | List_size -> prim I_SIZE 
+      | Empty_set _ -> prim I_EMPTY_SET
+      | Empty_map _ -> prim I_EMPTY_MAP
+      | Set_mem -> prim I_MEM
+      | Set_iter _ -> prim I_ITER
+      | Set_update -> prim I_UPDATE
+      | Set_size -> prim I_SIZE
+      | Map_iter _ -> prim I_ITER
+      | Map_mem -> prim I_MEM
+      | Map_map _ -> prim I_MAP
+      | Map_size -> prim I_SIZE
+      | Big_map_mem -> prim I_MEM
+      | Concat_string -> prim I_CONCAT
+      | Concat_string_pair -> prim I_CONCAT
+      | Concat_bytes -> prim I_CONCAT
+      | Concat_bytes_pair -> prim I_CONCAT
+      | Slice_string -> prim I_SLICE
+      | Slice_bytes -> prim I_SLICE
+      | String_size -> prim I_SIZE
+      | Bytes_size -> prim I_SIZE
+      | Add_seconds_to_timestamp -> prim I_ADD
+      | Add_timestamp_to_seconds -> prim I_ADD
+      | Sub_timestamp_seconds -> prim I_SUB
+      | Diff_timestamps -> prim I_SUB
       | Compare _ -> prim I_COMPARE
       | Int_nat -> prim I_INT
       | Add_natnat -> prim I_ADD
       | Add_natint -> prim I_ADD
       | Add_intnat -> prim I_ADD
+      | Add_intint -> prim I_ADD
+      | Add_tez -> prim I_ADD
+      | Sub_tez -> prim I_SUB
+      | Mul_teznat -> prim I_MUL
+      | Mul_nattez -> prim I_MUL
+      | Ediv_teznat -> prim I_EDIV
+      | Ediv_tez -> prim I_EDIV
       | Sub_int -> prim I_SUB
+      | Mul_intint -> prim I_MUL
+      | Mul_intnat -> prim I_MUL
+      | Mul_natint -> prim I_MUL
       | Mul_natnat -> prim I_MUL
+      | Ediv_intint -> prim I_EDIV
+      | Ediv_intnat -> prim I_EDIV
+      | Ediv_natint -> prim I_EDIV
       | Ediv_natnat -> prim I_MUL
       | Map_get -> prim I_GET
       | Map_update -> prim I_UPDATE
@@ -138,11 +176,39 @@ let data_to_string ty data =
       | Big_map_update -> prim I_UPDATE
       | Gt -> prim I_GT
       | Ge -> prim I_GE
+      | Lt -> prim I_LT
+      | Le -> prim I_LE
+      | Eq -> prim I_EQ
+      | Neq -> prim I_NEQ
       | Pack _ -> prim I_PACK
       | Unpack _ -> prim I_UNPACK
       | Blake2b -> prim I_BLAKE2B
+      | Or -> prim I_OR
       | And -> prim I_AND
       | Xor -> prim I_XOR
+      | Not -> prim I_NOT
+      | Is_nat -> prim I_EQ
+      | Neg_nat -> prim I_NEG
+      | Neg_int -> prim I_NEG
+      | Abs_int -> prim I_ABS
+      | Hash_key -> prim I_HASH_KEY
+      | Address -> prim I_ADDRESS
+      | Contract _ -> prim I_CONTRACT
+      | Create_account -> prim I_CREATE_ACCOUNT
+      | Create_contract _ -> prim I_CREATE_CONTRACT
+      | Set_delegate -> prim I_SET_DELEGATE
+      | Now -> prim I_NOW
+      | Balance -> prim I_BALANCE
+      | Check_signature -> prim I_CHECK_SIGNATURE
+      | Transfer_tokens -> prim I_TRANSFER_TOKENS
+      | Implicit_account -> prim I_IMPLICIT_ACCOUNT
+      | Sha256 -> prim I_SHA256
+      | Sha512 -> prim I_SHA512
+      | Steps_to_quota -> prim I_STEPS_TO_QUOTA
+      | Source -> prim I_SOURCE
+      | Sender -> prim I_SENDER 
+      | Self _ -> prim I_SELF
+      | Amount -> prim I_AMOUNT 
       | _ -> raise @@ Failure "descr to node" in
     f @@ Ex_descr x
   

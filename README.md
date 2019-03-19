@@ -27,3 +27,6 @@ Todos:
 - Easier way to pass in arguments instead of current verbose way
     - desirable way is "with \_" function (i.e. with_self self, with_currency currency)
     - Context easily modified in this manner
+
+- Design choices:
+    - Dip executed as one instruction and not stepped into. 

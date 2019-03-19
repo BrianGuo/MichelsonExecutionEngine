@@ -29,15 +29,15 @@
 
 type error_category = [ `Branch | `Temporary | `Permanent ]
 
-(* hack: forward reference from [Data_encoding_ezjsonm] *)
+(* hack: forward r eference from [Data_encoding_ezjsonm] *)
 let json_to_string = ref (fun _ -> "")
 
-(* let json_pp id encoding ppf x =
-  Format.pp_print_string ppf @@
-  !json_to_string @@
+let json_pp id encoding _ x =
+  Format.pp_print_string Format.std_formatter @@
+  Data_encoding.Json.to_string @@
   let encoding =
     Data_encoding.(merge_objs (obj1 (req "id" string)) encoding) in
-  Data_encoding.Json.construct encoding (id, x) *)
+  Data_encoding.Json.construct encoding (id, x)
 
 let set_error_encoding_cache_dirty = ref (fun () -> ())
 
@@ -223,7 +223,7 @@ module Make(Prefix : sig val id : string end) = struct
           description ;
           from_error ;
           encoding_case ;
-          pp = Option.unopt ~default:(fun fmt _ -> Format.fprintf fmt "%s: %s" name description) pp }
+          pp = Option.unopt ~default:((json_pp name encoding)) pp }
       :: !error_kinds
 
   let register_wrapped_error_kind

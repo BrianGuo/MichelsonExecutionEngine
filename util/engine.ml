@@ -35,11 +35,26 @@ let rec step_instr
           step_instr ~execution_context ~context (Ex_typed_stack (stack_ty, stack)) [Ex_descr h]
           >>=? fun (Ex_program_state (code_list, stack, stack_ty)) -> 
             return @@ Ex_program_state (code_list @ [Ex_descr tl] @ t, stack, stack_ty)
-      | Loop (body), Item (true, rest) -> 
-          (* executing the "truth" part is the step *)
-          return @@ Ex_program_state ((Ex_descr body)::t, rest, body.bef)
+      | If (bt, _), Item (true, rest) -> 
+          return @@ Ex_program_state ((Ex_descr bt)::t, rest, bt.bef)
+      | If (_, bf), Item(false, rest) ->
+          return @@ Ex_program_state ((Ex_descr bf)::t, rest, bf.bef)
+      | If_none (bt, _), Item (None, rest) -> 
+          return @@ Ex_program_state ((Ex_descr bt)::t, rest, bt.bef)
+      | If_none (_, bf), Item (Some v, rest) -> 
+          return @@ Ex_program_state ((Ex_descr bf)::t, Item (v, rest), bf.bef)
+      | If_left (bt, _), Item (L v, rest) ->
+          return @@ Ex_program_state ((Ex_descr bt)::t, Item (v, rest), bt.bef)
+      | If_left (_, bf), Item (R v, rest) ->
+          return @@ Ex_program_state ((Ex_descr bf)::t, Item (v, rest), bf.bef)
+      | If_cons (_, bf), Item ([], rest) ->
+          return @@ Ex_program_state ((Ex_descr bf)::t, rest, bf.bef)
+      | If_cons (bt, _), Item (hd :: tl, rest ) ->
+          return @@ Ex_program_state ((Ex_descr bt)::t, Item(hd, Item (tl, rest)), bt.bef)
+      | Loop (body), Item (true, rest) ->
+          return @@ Ex_program_state ((Ex_descr body)::(Ex_descr h)::t, rest, body.bef)
       | Loop_left (body), Item (L v, rest) -> 
-          return @@ Ex_program_state ((Ex_descr body)::t, Item (v, rest), body.bef)
+          return @@ Ex_program_state ((Ex_descr body)::(Ex_descr h)::t, Item (v, rest), body.bef)
       | _ -> 
         Script_interpreter.step context ~source ~payer ~self ~visitor amount h stack >>=? fun (stack, _) ->
           return @@ Program.Ex_program_state (t, stack, h.aft)

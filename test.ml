@@ -49,16 +49,16 @@ let x =
 
 let result  = 
   let execution_context = 
-    {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "Unit"; storage = "\"\""} in
+    {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "(Left \"tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU\")"; storage = "{}"} in
   let context = Context.default_context |> Context.init_contracts 10 in 
-    Fileparser.get_initial_program context "helloworld.tz" execution_context
-    |> fun (program) -> 
-      Engine.step context execution_context program
-    |> fun (program) ->
-      Engine.step context execution_context program
-    |> fun (program) ->
-      Engine.step context execution_context program
+    Fileparser.get_initial_program context "accounts.tz" execution_context
     (*|> fun (program) -> 
+      Engine.step context execution_context program
+    |> fun (program) ->
+      Engine.step context execution_context program
+    |> fun (program) ->
+      Engine.step context execution_context program
+    |> fun (program) -> 
       Engine.step context execution_context program
     |> fun (program) -> 
       Engine.step context execution_context program

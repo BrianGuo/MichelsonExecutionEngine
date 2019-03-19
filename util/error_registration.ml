@@ -165,7 +165,7 @@ let register () =
       | Invalid_primitive (loc, exp, got) -> Some (loc, (exp, got))
       | _ -> None)
     (fun (loc, (exp, got)) ->
-       Invalid_primitive (loc, exp, got)) ;
+       Invalid_primitive (loc, exp, got));
   (* Invalid kind *)
   register_error_kind
     `Permanent

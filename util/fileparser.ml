@@ -108,7 +108,7 @@ let get_toplevel_object ?environment toplevel_path claimed_storage_type claimed_
                 (storage_type, None, None), None) in
       parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
         context (param_type_full, None) ret_type_full code_field >>=? 
-      fun (Lam (desc, _), _) -> 
+      fun (Lam (desc, _), _) ->
       parse_data context param_type @@ Cast.node_of_string execution_context.parameter
       >>=? fun (param_val, _) ->
       parse_data context storage_type @@ Cast.node_of_string execution_context.storage 
