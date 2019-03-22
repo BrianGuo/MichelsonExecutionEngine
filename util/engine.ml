@@ -5,6 +5,8 @@ open Script_interpreter
 open Script_ir_translator
 open Script_ir_nodes
 open Misc
+open Data_factory
+open Tezos_micheline
 open Program
 
 
@@ -63,20 +65,19 @@ let rec step_instr
   
 
 let execute_with_execution_context ctxt mode code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
-  parse_data ctxt storage_type @@ Cast.node_of_string execution_context.storage >>=?
-  fun (storage, context) ->
-      let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
-      execute 
-          context 
-          mode 
-          ~source:(List.nth contracts execution_context.source)
-          ~payer:(List.nth contracts execution_context.payer)
-          ~arg_type:arg_type
-          ~self:((List.nth contracts execution_context.self), code)
-          ~amount:(execution_context.amount)
-          ~parameter:(Cast.expr_of_string execution_context.parameter)
-          ~storage:storage
-          ~storage_ty:storage_type
+  parse_data_simplified ctxt storage_type execution_context.storage >>=? fun (storage) ->
+  let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
+  execute 
+      ctxt 
+      mode 
+      ~source:(List.nth contracts execution_context.source)
+      ~payer:(List.nth contracts execution_context.payer)
+      ~arg_type:arg_type
+      ~self:((List.nth contracts execution_context.self), code)
+      ~amount:(execution_context.amount)
+      ~parameter:(Micheline.strip_locations execution_context.parameter)
+      ~storage:storage
+      ~storage_ty:storage_type
 
 let get_toplevel_and_execute context toplevel_path execution_context =
   try 

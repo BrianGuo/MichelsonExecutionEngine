@@ -3,8 +3,8 @@ type t = {
   payer : int;
   self : int;
   amount : Tez.t;
-  parameter : string ;
-  storage : string;
+  parameter : Script.node ;
+  storage : Script.node;
 }
 
 let default_execution_context = {
@@ -12,8 +12,8 @@ let default_execution_context = {
   payer = 0;
   self = 0;
   amount = Tez.zero;
-  parameter = "";
-  storage = "";
+  parameter = String (0, "");
+  storage = String (0, "");
 }
 
 let with_source_index ind ctxt =

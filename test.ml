@@ -5,7 +5,6 @@ open Tezos_micheline
 open Fileparser
 open Context_type
 open Execution_context
-open Program
 
 let print_test expr =
   let print_node = Micheline_printer.printable Michelson_v1_primitives.string_of_prim expr in
@@ -51,7 +50,7 @@ let result  =
   let execution_context = 
     {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "(Left \"tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU\")"; storage = "{}"} in
   let context = Context.default_context |> Context.init_contracts 10 in 
-    Fileparser.get_initial_program context "accounts.tz" execution_context
+    Engine.get_toplevel_and_execute context "accounts.tz" execution_context
     (*|> fun (program) -> 
       Engine.step context execution_context program
     |> fun (program) ->
@@ -65,10 +64,14 @@ let result  =
     |> fun (program) -> 
       Engine.step context execution_context program *)
   
-let () =
+(* let () =
+  let open Program in
   let Program.Ex_program_state (code, stack, ty) = result in
   let Ex_descr code = List.hd code in 
     print_endline @@ Cast.stack_to_string ty stack;
-    print_endline @@ Cast.descr_to_string code
+    print_endline @@ Cast.descr_to_string code *)
+
+let () =
+  print_endline @@ print_test result.storage
   
 
