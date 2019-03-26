@@ -9,59 +9,52 @@ open Data_factory
 open Tezos_micheline
 open Program
 
-
-let rec step_instr
-  ?(execution_context=default_execution_context) 
-  ?(context=(Context.init_contracts 10 default_context)) 
-  (stack : Cast.ex_typed_stack)
-  (code_list : Program.ex_descr list) 
-  : (Program.ex_program_state tzresult Lwt.t) =
+let rec typed_step_instr :
+  type bef aft.
+  ?execution_context :Execution_context.t -> ?context: Context.t -> 
+  bef stack -> bef stack_ty -> (bef, aft) descr ->
+  (Program.ex_program_state tzresult Lwt.t) =
+  fun ?(execution_context=default_execution_context) ?(context=(Context.init_contracts 10 default_context)) 
+  stack stack_ty code ->
     let contracts = get_contracts_and_storage context in
     let source =  fst @@ List.nth contracts execution_context.source in
     let payer = fst @@ List.nth contracts execution_context.payer in
     let self = fst @@ List.nth contracts execution_context.self in
     let amount = execution_context.amount in
     let visitor = fun _ -> () (* TODO: allow for visitors to print *) in
-    let Cast.Ex_typed_stack (stack_ty, stack) = stack in
-    begin
-    match code_list with
-    (* code list is a list of snippets of code *)
-    (* todo: if statements should be included? *)
-    | [] -> raise (Failure "no code was provided, the program may have finished executing")
-    | (Ex_descr h):: t ->
-      Misc.force_ok ~msg:"code does not match this stack type" @@ 
-      stack_ty_eq context 0 (h.bef) (stack_ty) |> fun (Eq, _) ->
-      begin 
-      match h.instr, stack with
-      | Seq (h, tl), _ -> 
-          step_instr ~execution_context ~context (Ex_typed_stack (stack_ty, stack)) [Ex_descr h]
-          >>=? fun (Ex_program_state (code_list, stack, stack_ty)) -> 
-            return @@ Ex_program_state (code_list @ [Ex_descr tl] @ t, stack, stack_ty)
-      | If (bt, _), Item (true, rest) -> 
-          return @@ Ex_program_state ((Ex_descr bt)::t, rest, bt.bef)
-      | If (_, bf), Item(false, rest) ->
-          return @@ Ex_program_state ((Ex_descr bf)::t, rest, bf.bef)
-      | If_none (bt, _), Item (None, rest) -> 
-          return @@ Ex_program_state ((Ex_descr bt)::t, rest, bt.bef)
-      | If_none (_, bf), Item (Some v, rest) -> 
-          return @@ Ex_program_state ((Ex_descr bf)::t, Item (v, rest), bf.bef)
-      | If_left (bt, _), Item (L v, rest) ->
-          return @@ Ex_program_state ((Ex_descr bt)::t, Item (v, rest), bt.bef)
-      | If_left (_, bf), Item (R v, rest) ->
-          return @@ Ex_program_state ((Ex_descr bf)::t, Item (v, rest), bf.bef)
-      | If_cons (_, bf), Item ([], rest) ->
-          return @@ Ex_program_state ((Ex_descr bf)::t, rest, bf.bef)
-      | If_cons (bt, _), Item (hd :: tl, rest ) ->
-          return @@ Ex_program_state ((Ex_descr bt)::t, Item(hd, Item (tl, rest)), bt.bef)
-      | Loop (body), Item (true, rest) ->
-          return @@ Ex_program_state ((Ex_descr body)::(Ex_descr h)::t, rest, body.bef)
-      | Loop_left (body), Item (L v, rest) -> 
-          return @@ Ex_program_state ((Ex_descr body)::(Ex_descr h)::t, Item (v, rest), body.bef)
-      | _ -> 
-        Script_interpreter.step context ~source ~payer ~self ~visitor amount h stack >>=? fun (stack, _) ->
-          return @@ Program.Ex_program_state (t, stack, h.aft)
-      end
+    Misc.force_ok ~msg:"code does not match this stack type" @@ 
+    stack_ty_eq context 0 (code.bef) (stack_ty) |> fun (Eq, _) ->
+    begin 
+    match code.instr, stack with
+    | Seq (h, tl), _ -> 
+        typed_step_instr ~execution_context ~context stack stack_ty h
+        >>=? fun (Ex_program_state (code_list, stack, stack_ty)) -> 
+          return @@ Ex_program_state (code_list @ [Ex_descr tl], stack, stack_ty)
+    | If (bt, _), Item (true, rest) -> 
+        return @@ Ex_program_state ([(Ex_descr bt)], rest, bt.bef)
+    | If (_, bf), Item(false, rest) ->
+        return @@ Ex_program_state ([(Ex_descr bf)], rest, bf.bef)
+    | If_none (bt, _), Item (None, rest) -> 
+        return @@ Ex_program_state ([Ex_descr bt], rest, bt.bef)
+    | If_none (_, bf), Item (Some v, rest) -> 
+        return @@ Ex_program_state ([(Ex_descr bf)], Item (v, rest), bf.bef)
+    | If_left (bt, _), Item (L v, rest) ->
+        return @@ Ex_program_state ([(Ex_descr bt)], Item (v, rest), bt.bef)
+    | If_left (_, bf), Item (R v, rest) ->
+        return @@ Ex_program_state ([(Ex_descr bf)], Item (v, rest), bf.bef)
+    | If_cons (_, bf), Item ([], rest) ->
+        return @@ Ex_program_state ([(Ex_descr bf)], rest, bf.bef)
+    | If_cons (bt, _), Item (hd :: tl, rest ) ->
+        return @@ Ex_program_state ([(Ex_descr bt)], Item(hd, Item (tl, rest)), bt.bef)
+    | Loop (body), Item (true, rest) ->
+        return @@ Ex_program_state ([(Ex_descr body); (Ex_descr code)], rest, body.bef)
+    | Loop_left (body), Item (L v, rest) -> 
+        return @@ Ex_program_state ([(Ex_descr body); (Ex_descr code)], Item (v, rest), body.bef)
+    | _ -> 
+      Script_interpreter.step context ~source ~payer ~self ~visitor amount code stack >>=? fun (stack, _) ->
+        return @@ Program.Ex_program_state ([], stack, code.aft)
     end
+
   
 
 let execute_with_execution_context ctxt mode code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
@@ -78,6 +71,17 @@ let execute_with_execution_context ctxt mode code (execution_context : Execution
       ~parameter:(Micheline.strip_locations execution_context.parameter)
       ~storage:storage
       ~storage_ty:storage_type
+
+let execute_with_typed_execution_context (type a) (type b) ctxt code (execution_context : (a, b) Execution_context.typed_t) =
+  let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
+  interp 
+      ctxt 
+      ~source:(List.nth contracts execution_context.source)
+      ~payer:(List.nth contracts execution_context.payer)
+      ~self:(List.nth contracts execution_context.self)
+      (execution_context.amount)
+      code
+      (execution_context.parameter, execution_context.storage)
 
 let get_toplevel_and_execute context toplevel_path execution_context =
   try 
@@ -111,12 +115,54 @@ let get_toplevel_and_execute context toplevel_path execution_context =
         print_endline "Maybe you forgot to initialize the storage?";
         raise (Failure f)
 
+let get_typed_toplevel_and_execute :
+ type param storage.
+ Context.t -> string -> (param, storage) Execution_context.typed_t -> 
+ param_type:param ty -> storage_type:storage ty -> 
+ ((packed_internal_operation list * storage) * Context.t) =
+ fun context toplevel_path execution_context ~param_type ~storage_type ->
+  try 
+    Lwt_main.run @@ (
+      let program = Fileparser.get_initial_typed_program 
+        context toplevel_path execution_context param_type storage_type in
+    execute_with_typed_execution_context 
+      context 
+      program.code 
+      execution_context 
+  ) |> Misc.force_ok ~msg:"Execution Failed"
+  with 
+    | Failure f ->
+      if f = "nth" then 
+        print_endline ("Failed List.nth failure");
+        print_endline "Maybe you forgot to initialize the storage?";
+        raise (Failure f)
+
+let step_typed :
+  type bef aft.
+  Context.t -> Execution_context.t -> (bef, aft) Program.typed_program -> Program.ex_program_state = 
+  fun context execution_context program -> 
+  Lwt_main.run @@ (
+    let Lam (descr, _) = program.code in 
+    typed_step_instr 
+    ~execution_context ~context 
+    program.stack
+    program.stack_ty
+    descr
+  ) |> Misc.force_ok ~msg:"Step Execution Failed"
+
 let step context execution_context ex_program_state : Program.ex_program_state =
   Lwt_main.run @@ (
     let Ex_program_state (desc_list, stack, ty) = ex_program_state in 
-    step_instr ~execution_context ~context (Ex_typed_stack (ty, stack)) desc_list >>=? 
-    fun (stack) ->
-      return stack
-  ) |> Misc.force_ok ~msg:"Execution Failed"
+    match desc_list with
+    | [] -> raise (Failure "No code was provided")
+    | h::t ->
+      let Ex_descr code = h in
+      Misc.force_ok ~msg:"code does not match this stack type" @@ 
+      stack_ty_eq context 0 (code.bef) (ty) |> fun (Eq, _) ->
+      typed_step_instr ~execution_context ~context stack ty code >>=? 
+      fun (program) ->
+        let Ex_program_state (lst, stack, ty) = program in
+        return @@ Ex_program_state (lst @ t, stack, ty)
+  ) |> Misc.force_ok ~msg:"Step Execution Failed"
 
 

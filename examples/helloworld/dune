@@ -1,0 +1,3 @@
+(executable
+  (name helloworld)
+  (libraries lib))

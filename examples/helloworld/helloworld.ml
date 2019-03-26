@@ -1,22 +1,22 @@
 open Lib
-open Tezos_error_monad
-open Error_monad
-open Tezos_micheline
+open Tezos_error_monad.Error_monad
 open Fileparser
 open Context_type
 open Execution_context
+open Types
 
-let print_test expr =
-  let print_node = Micheline_printer.printable Michelson_v1_primitives.string_of_prim expr in
-  Micheline_printer.print_expr Format.str_formatter print_node ;
-  Format.flush_str_formatter ()
+let () = Error_registration.register();
+
+module Environment = struct
+  let param_type = unit_t
+  let storage_type = string_t
+end
 
 let x =
-  Error_registration.register ();
   let t = Fileparser.get_toplevel_object
-    "helloworld.tz"
-    (String_t None)
-    (Unit_t None)
+    "./helloworld.tz"
+    Environment.storage_type
+    Environment.param_type
   in
   Lwt_main.run (
     Misc.init 10 >>=? fun (_, contracts, _) ->
@@ -43,14 +43,14 @@ let x =
           | Implicit x -> print_endline @@ Signature.Public_key_hash.to_string x;
           | _ -> ()) 
         (Context_type.Storage_map_mod.bindings result.ctxt.storage_map);
-        print_endline (print_test result.storage);
+        Printer.print_node result.storage;
         Lwt.return @@ ok ("hello"))
 
 let result  = 
   let execution_context = 
-    {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = "(Left \"tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU\")"; storage = "{}"} in
+    {source = 0; payer = 0; self = 0; amount = Tez.zero; parameter = (); storage = ""} in
   let context = Context.default_context |> Context.init_contracts 10 in 
-    Engine.get_toplevel_and_execute context "accounts.tz" execution_context
+    Engine.get_typed_toplevel_and_execute context "helloworld.tz" execution_context ~param_type:(Unit_t None) ~storage_type:(String_t None)
     (*|> fun (program) -> 
       Engine.step context execution_context program
     |> fun (program) ->
@@ -72,6 +72,6 @@ let result  =
     print_endline @@ Cast.descr_to_string code *)
 
 let () =
-  print_endline @@ print_test result.storage
+  print_endline @@ Cast.data_to_string (String_t None) @@ snd @@ fst result
   
 

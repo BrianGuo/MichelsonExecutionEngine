@@ -16,6 +16,17 @@ let default_execution_context = {
   storage = String (0, "");
 }
 
+type ('param, 'storage) typed_t = {
+  source : int;
+  payer : int;
+  self : int;
+  amount : Tez.t;
+  parameter : 'param;
+  storage : 'storage;
+}
+
+
+
 let with_source_index ind ctxt =
   {ctxt with source = ind }
 

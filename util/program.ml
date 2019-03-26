@@ -9,6 +9,11 @@ type 'ty stack_ty = 'ty Script_ir_nodes.stack_ty
 type ('bef, 'aft) descr = ('bef, 'aft) Script_ir_nodes.descr
 type ex_descr = Ex_descr : ('b, 'a) descr -> ex_descr
 type ex_typed_stack = Cast.ex_typed_stack
+type ('param, 'storage) typed_program = {
+  code : (('param, 'storage) pair, (packed_internal_operation list, 'storage) pair ) lambda;
+  stack : (('param * 'storage) * end_of_stack) stack;
+  stack_ty : (('param, 'storage) pair * end_of_stack) stack_ty;
+}
 type ex_program_state = Ex_program_state : (ex_descr list * 'a stack * 'a stack_ty) -> ex_program_state
 
 module Stack = struct
