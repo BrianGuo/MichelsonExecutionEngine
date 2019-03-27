@@ -7,8 +7,10 @@ type 'tys stack = 'tys Script_interpreter.stack
 type 'ty stack_ty = 'ty Script_ir_nodes.stack_ty
 
 type ('bef, 'aft) descr = ('bef, 'aft) Script_ir_nodes.descr
+type ('bef, 'aft) lambda = ('bef, 'aft) Script_ir_nodes.lambda
 type ex_descr = Ex_descr : ('b, 'a) descr -> ex_descr
-type ex_typed_stack = Cast.ex_typed_stack
+type ex_lambda = Ex_lambda : ('b, 'a) lambda -> ex_lambda
+type ex_typed_stack = Cast.ex_typed_stack = Ex_typed_stack : ('a stack_ty * 'a stack) -> ex_typed_stack
 type ('param, 'storage) typed_program = {
   code : (('param, 'storage) pair, (packed_internal_operation list, 'storage) pair ) lambda;
   stack : (('param * 'storage) * end_of_stack) stack;

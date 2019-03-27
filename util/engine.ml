@@ -13,7 +13,7 @@ let rec typed_step_instr :
   type bef aft.
   ?execution_context :Execution_context.t -> ?context: Context.t -> 
   bef stack -> bef stack_ty -> (bef, aft) descr ->
-  (Program.ex_program_state tzresult Lwt.t) =
+  ((Program.ex_program_state * Context.t) tzresult Lwt.t) =
   fun ?(execution_context=default_execution_context) ?(context=(Context.init_contracts 10 default_context)) 
   stack stack_ty code ->
     let contracts = get_contracts_and_storage context in
@@ -28,36 +28,36 @@ let rec typed_step_instr :
     match code.instr, stack with
     | Seq (h, tl), _ -> 
         typed_step_instr ~execution_context ~context stack stack_ty h
-        >>=? fun (Ex_program_state (code_list, stack, stack_ty)) -> 
-          return @@ Ex_program_state (code_list @ [Ex_descr tl], stack, stack_ty)
+        >>=? fun ((Ex_program_state (code_list, stack, stack_ty)), ctxt) -> 
+          return @@ (Ex_program_state (code_list @ [Ex_descr tl], stack, stack_ty), ctxt)
     | If (bt, _), Item (true, rest) -> 
-        return @@ Ex_program_state ([(Ex_descr bt)], rest, bt.bef)
+        return @@ (Ex_program_state ([(Ex_descr bt)], rest, bt.bef), context)
     | If (_, bf), Item(false, rest) ->
-        return @@ Ex_program_state ([(Ex_descr bf)], rest, bf.bef)
+        return @@ (Ex_program_state ([(Ex_descr bf)], rest, bf.bef), context)
     | If_none (bt, _), Item (None, rest) -> 
-        return @@ Ex_program_state ([Ex_descr bt], rest, bt.bef)
+        return @@ (Ex_program_state ([Ex_descr bt], rest, bt.bef), context)
     | If_none (_, bf), Item (Some v, rest) -> 
-        return @@ Ex_program_state ([(Ex_descr bf)], Item (v, rest), bf.bef)
+        return @@ (Ex_program_state ([(Ex_descr bf)], Item (v, rest), bf.bef), context)
     | If_left (bt, _), Item (L v, rest) ->
-        return @@ Ex_program_state ([(Ex_descr bt)], Item (v, rest), bt.bef)
+        return @@ (Ex_program_state ([(Ex_descr bt)], Item (v, rest), bt.bef), context)
     | If_left (_, bf), Item (R v, rest) ->
-        return @@ Ex_program_state ([(Ex_descr bf)], Item (v, rest), bf.bef)
+        return @@ (Ex_program_state ([(Ex_descr bf)], Item (v, rest), bf.bef), context)
     | If_cons (_, bf), Item ([], rest) ->
-        return @@ Ex_program_state ([(Ex_descr bf)], rest, bf.bef)
+        return @@ (Ex_program_state ([(Ex_descr bf)], rest, bf.bef), context)
     | If_cons (bt, _), Item (hd :: tl, rest ) ->
-        return @@ Ex_program_state ([(Ex_descr bt)], Item(hd, Item (tl, rest)), bt.bef)
+        return @@ (Ex_program_state ([(Ex_descr bt)], Item(hd, Item (tl, rest)), bt.bef), context)
     | Loop (body), Item (true, rest) ->
-        return @@ Ex_program_state ([(Ex_descr body); (Ex_descr code)], rest, body.bef)
+        return @@ (Ex_program_state ([(Ex_descr body); (Ex_descr code)], rest, body.bef), context)
     | Loop_left (body), Item (L v, rest) -> 
-        return @@ Ex_program_state ([(Ex_descr body); (Ex_descr code)], Item (v, rest), body.bef)
+        return @@ (Ex_program_state ([(Ex_descr body); (Ex_descr code)], Item (v, rest), body.bef), context)
     | _ -> 
-      Script_interpreter.step context ~source ~payer ~self ~visitor amount code stack >>=? fun (stack, _) ->
-        return @@ Program.Ex_program_state ([], stack, code.aft)
+      Script_interpreter.step context ~source ~payer ~self ~visitor amount code stack >>=? fun (stack, context) ->
+        return @@ (Program.Ex_program_state ([], stack, code.aft), context)
     end
 
   
 
-let execute_with_execution_context ctxt mode code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
+let execute_lambda_with_execution_context ctxt mode code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
   parse_data_simplified ctxt storage_type execution_context.storage >>=? fun (storage) ->
   let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
   execute 
@@ -71,6 +71,20 @@ let execute_with_execution_context ctxt mode code (execution_context : Execution
       ~parameter:(Micheline.strip_locations execution_context.parameter)
       ~storage:storage
       ~storage_ty:storage_type
+
+let execute_with_execution_context ctxt code (execution_context : Execution_context.t)  ~arg_type ~storage_type = 
+  parse_data_simplified ctxt storage_type execution_context.storage >>=? fun (storage) ->
+  parse_data_simplified ctxt arg_type execution_context.parameter >>=? fun (parameter) ->
+  let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
+  let stack = Item ((parameter, storage), Empty) in
+  step 
+      ctxt 
+      ~source:(List.nth contracts execution_context.source)
+      ~payer:(List.nth contracts execution_context.payer)
+      ~self:((List.nth contracts execution_context.self))
+      (execution_context.amount)
+      code
+      stack
 
 let execute_with_typed_execution_context (type a) (type b) ctxt code (execution_context : (a, b) Execution_context.typed_t) =
   let contracts = List.map (fun f -> fst f) (Context_type.Storage_map_mod.bindings ctxt.storage_map) in
@@ -100,7 +114,7 @@ let get_toplevel_and_execute context toplevel_path execution_context =
               (storage_type, None, None), None) in
     parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
       context (param_type_full, None) ret_type_full code_field >>=? fun (code, _) -> 
-    execute_with_execution_context 
+    execute_lambda_with_execution_context 
       context 
       Readable 
       code 
@@ -139,7 +153,7 @@ let get_typed_toplevel_and_execute :
 
 let step_typed :
   type bef aft.
-  Context.t -> Execution_context.t -> (bef, aft) Program.typed_program -> Program.ex_program_state = 
+  Context.t -> Execution_context.t -> (bef, aft) Program.typed_program -> (Program.ex_program_state * Context.t) = 
   fun context execution_context program -> 
   Lwt_main.run @@ (
     let Lam (descr, _) = program.code in 
@@ -150,7 +164,7 @@ let step_typed :
     descr
   ) |> Misc.force_ok ~msg:"Step Execution Failed"
 
-let step context execution_context ex_program_state : Program.ex_program_state =
+let step context execution_context ex_program_state : (Program.ex_program_state * Context.t) =
   Lwt_main.run @@ (
     let Ex_program_state (desc_list, stack, ty) = ex_program_state in 
     match desc_list with
@@ -160,9 +174,20 @@ let step context execution_context ex_program_state : Program.ex_program_state =
       Misc.force_ok ~msg:"code does not match this stack type" @@ 
       stack_ty_eq context 0 (code.bef) (ty) |> fun (Eq, _) ->
       typed_step_instr ~execution_context ~context stack ty code >>=? 
-      fun (program) ->
+      fun (program, context) ->
         let Ex_program_state (lst, stack, ty) = program in
-        return @@ Ex_program_state (lst @ t, stack, ty)
+        return @@ (Ex_program_state (lst @ t, stack, ty), context)
   ) |> Misc.force_ok ~msg:"Step Execution Failed"
+
+let rec step_n :
+  n:int -> Context.t -> Execution_context.t -> Program.ex_program_state ->
+  (Program.ex_program_state * Context.t) =
+  fun ~n context execution_context program ->
+    if n = 0 then
+      (program, context)
+    else
+      let (prog, ctxt) = step context execution_context program in
+      step_n ~n:(n-1) ctxt execution_context prog 
+
 
 

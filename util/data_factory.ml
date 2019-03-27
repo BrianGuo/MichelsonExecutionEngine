@@ -375,3 +375,17 @@ and create_data_node_from_comparable_ty
       a comparable_ty -> a -> Script.node
     = fun ty data ->
       create_data_node_from_ty (ty_of_comparable_ty ty) data
+
+
+let lambda_of_descr :
+  type bef aft.
+  (bef * end_of_stack, aft * end_of_stack) descr -> (bef, aft) lambda =
+  fun code -> 
+      Lam (code, strip_locations @@ Cast.descr_to_node code)
+
+let descr_of_lambda :
+  type bef aft.
+  (bef, aft) lambda -> (bef * end_of_stack, aft * end_of_stack) descr =
+  fun lam ->
+    let Lam (descr, _) = lam in
+    descr

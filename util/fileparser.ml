@@ -51,7 +51,7 @@ let get_toplevel_object ?environment toplevel_path claimed_storage_type claimed_
     code ;
   }
 
-let get_initial_program context toplevel_path execution_context : ex_program_state =
+let get_initial_program context toplevel_path (execution_context : Execution_context.t) : ex_program_state =
   Lwt_main.run @@ (
       get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
     let (Ex_ty param_type, _) =
@@ -67,14 +67,14 @@ let get_initial_program context toplevel_path execution_context : ex_program_sta
               (storage_type, None, None), None) in
     parse_returning (Toplevel { storage_type = storage_type ; param_type = param_type })
       context (param_type_full, None) ret_type_full code_field >>=? 
-    fun (Lam (desc, _), _) ->
+    fun (Lam (code, _), _) ->
     parse_data_simplified context param_type execution_context.parameter
     >>=? fun (param_val) ->
     parse_data_simplified context storage_type execution_context.storage 
     >>=? fun (storage_val) ->
     let stack = Item ((param_val, storage_val), Empty) in
     let stack_ty = Item_t (param_type_full, Empty_t, None) in
-    return @@ Program.Ex_program_state ([Ex_descr desc ], stack, stack_ty)
+    return @@ Program.Ex_program_state ([Ex_descr code ], stack, stack_ty)
   ) |> Misc.force_ok ~msg:"Program could not be parsed"
 
 let get_initial_typed_program :
