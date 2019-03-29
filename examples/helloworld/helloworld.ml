@@ -4,6 +4,7 @@ open Fileparser
 open Context_type
 open Execution_context
 open Types
+open OUnit
 
 let () = Error_registration.register();
 
@@ -100,6 +101,21 @@ let print_results_of_partial_stepping _ =
     let ((Program.Ex_program_state (_, stack, ty), context)) = result in
     print_endline @@ Cast.stack_to_string ty stack;
     print_endline @@ Int64.to_string @@ (snd (List.hd @@ Context.get_contracts_and_storage context)).balance
+
+let test_execution_produces_correct_list_and_storage _ =
+  execute_directly_using_engine |> fun ((operations_list, storage), _) ->
+    assert_equal (List.length operations_list) 0;
+    assert_equal storage "Hello Tezos!";
+    ()
+
+let suite = 
+
+let _ = run_test_tt_main @@ (
+  "helloworld_test_suite" >:::
+  [
+    "execution_test" >:: test_execution_produces_correct_list_and_storage
+  ]
+) in ()
 
 (*
   let () = print_results_of_partial_stepping ()

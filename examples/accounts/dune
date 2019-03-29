@@ -1,4 +1,4 @@
 (executable
-  (name helloworld)
+  (name accounts)
   (libraries lib
               ounit))

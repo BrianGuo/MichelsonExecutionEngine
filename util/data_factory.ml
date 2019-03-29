@@ -389,3 +389,44 @@ let descr_of_lambda :
   fun lam ->
     let Lam (descr, _) = lam in
     descr
+
+let key_of_string :
+  string -> Signature.public_key = 
+  fun key ->
+    match Signature.Public_key.of_b58check_opt key with
+    | Some k -> k
+    | None -> raise (Failure 
+      "Provided string cannot be converted to key. Ensure that the string is properly b58-encoded")
+
+let key_hash_of_string :
+  string -> Signature.public_key_hash =
+  fun key_hash ->
+    match Signature.Public_key_hash.of_b58check_opt key_hash with
+    | Some kh -> kh
+    | None -> raise (Failure 
+    "Provided string cannot be converted to key hash. Ensure that the string is properly b58-encoded")
+
+let union_left :
+  type a.
+  a -> (a, 'b) union =
+  fun elt ->
+    L elt
+
+let union_right :
+  type a.
+  a -> ('b, a) union =
+  fun elt ->
+    R elt
+
+let empty_map :
+  type a.
+  key:a comparable_ty -> (a, 'b) map = 
+  fun ~key ->
+  empty_map key
+
+let empty_set :
+  type a.
+  key:a comparable_ty -> a set =
+  fun ~key ->
+  empty_set key
+  

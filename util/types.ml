@@ -23,6 +23,16 @@ let big_map_t key value = Big_map_t (key, value, None)
 let contract_t arg = Contract_t (arg, None)
 let operation_t = Operation_t None
 
+let int_key = Int_key None
+let nat_key = Nat_key None
+let string_key = String_key None
+let bytes_key = Bytes_key None
+let mutez_key = Mutez_key None
+let bool_key = Bool_key None
+let key_hash_key = Key_hash_key None
+let timestamp_key = Timestamp_key None
+let address_key = Address_key None
+
 module type Env = sig
   val param_type : 'a ty 
   val storage_type : 'b ty

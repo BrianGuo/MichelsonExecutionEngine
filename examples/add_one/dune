@@ -1,0 +1,4 @@
+(executable
+  (name add_one)
+  (libraries lib
+            ounit))

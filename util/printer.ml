@@ -32,3 +32,9 @@ let print_node :
     let print_node = Micheline_printer.printable Michelson_v1_primitives.string_of_prim expr in
     Micheline_printer.print_expr Format.str_formatter print_node;
     print_endline @@ Format.flush_str_formatter ()
+
+let print_data :
+  type a.
+  a Script_ir_nodes.ty -> a -> unit =
+  fun ty data ->
+    print_endline @@ Cast.data_to_string ty data
