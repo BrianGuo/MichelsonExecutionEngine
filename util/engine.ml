@@ -97,8 +97,7 @@ let execute_with_typed_execution_context (type a) (type b) ctxt code (execution_
       code
       (execution_context.parameter, execution_context.storage)
 
-let get_toplevel_and_execute context toplevel_path execution_context =
-  try 
+let get_toplevel_and_execute context toplevel_path execution_context = 
     Lwt_main.run @@ (
       Fileparser.get_toplevel_node () toplevel_path >>=? fun (param_type, storage_type, code_field) ->
     let (Ex_ty param_type, _) =
@@ -122,12 +121,6 @@ let get_toplevel_and_execute context toplevel_path execution_context =
       ~arg_type:param_type 
       ~storage_type:storage_type
   ) |> Misc.force_ok ~msg:"Execution Failed"
-  with 
-    | Failure f ->
-      if f = "nth" then 
-        print_endline ("Failed List.nth failure");
-        print_endline "Maybe you forgot to initialize the storage?";
-        raise (Failure f)
 
 let get_typed_toplevel_and_execute :
  type param storage.
@@ -135,7 +128,6 @@ let get_typed_toplevel_and_execute :
  param_type:param ty -> storage_type:storage ty -> 
  ((packed_internal_operation list * storage) * Context.t) =
  fun context toplevel_path execution_context ~param_type ~storage_type ->
-  try 
     Lwt_main.run @@ (
       let program = Fileparser.get_initial_typed_program 
         context toplevel_path execution_context param_type storage_type in
@@ -144,12 +136,6 @@ let get_typed_toplevel_and_execute :
       program.code 
       execution_context 
   ) |> Misc.force_ok ~msg:"Execution Failed"
-  with 
-    | Failure f ->
-      if f = "nth" then 
-        print_endline ("Failed List.nth failure");
-        print_endline "Maybe you forgot to initialize the storage?";
-        raise (Failure f)
 
 let step_typed :
   type bef aft.

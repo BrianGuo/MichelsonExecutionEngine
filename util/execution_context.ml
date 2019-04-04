@@ -25,7 +25,18 @@ type ('param, 'storage) typed_t = {
   storage : 'storage;
 }
 
+let default_typed_execution_context param storage =
+  {
+    source = 0;
+    payer = 0;
+    self = 0;
+    amount = Tez.zero;
+    parameter = param;
+    storage = storage;
+  }
 
+type execution_trace =
+  (Script.location * Gas.t * (Script.expr * string option) list) list
 
 let with_source_index ind ctxt =
   {ctxt with source = ind }

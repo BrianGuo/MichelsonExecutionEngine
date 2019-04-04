@@ -108,14 +108,12 @@ let test_execution_produces_correct_list_and_storage _ =
     assert_equal storage "Hello Tezos!";
     ()
 
-let suite = 
-
-let _ = run_test_tt_main @@ (
+let _ = run_test_tt_main (
   "helloworld_test_suite" >:::
   [
     "execution_test" >:: test_execution_produces_correct_list_and_storage
   ]
-) in ()
+)
 
 (*
   let () = print_results_of_partial_stepping ()

@@ -73,6 +73,14 @@ type error += Undefined_binop : Script.location * prim * Script.expr * Script.ex
 type error += Undefined_unop : Script.location * prim * Script.expr -> error
 type error += Invalid_contract of Script.location * Context_type.contract_type
 type error += Ill_typed_data : string option * Script.expr * Script.expr -> error
+
+type error += Reject of Script.location * Script.expr * Execution_context.execution_trace option
+type error += Overflow of Script.location * Execution_context.execution_trace option
+type error += Runtime_contract_error : Contract.t * Script.expr -> error
+type error += Bad_contract_parameter of Contract.t (* `Permanent *)
+type error += Cannot_serialize_log
+type error += Cannot_serialize_failure
+type error += Cannot_serialize_storage
 (* Helpers for encoding *)
 let type_map_enc =
   let open Data_encoding in
@@ -122,6 +130,15 @@ let register () =
                   "bytes", Bytes_kind ;
                   "primitiveApplication", Prim_kind ;
                   "sequence", Seq_kind ] in
+  let trace_encoding =
+    (list @@ obj3
+        (req "location" Script.location_encoding)
+        (req "gas" Gas.encoding)
+        (req "stack"
+          (list
+              (obj2
+                (req "item" (Script.expr_encoding))
+                (opt "annot" string))))) in
   (* -- Structure errors ---------------------- *)
   (* Invalid arity *)
   register_error_kind
@@ -667,4 +684,84 @@ let register () =
                   the provided gas"
     Data_encoding.empty
     (function Cannot_serialize_error -> Some () | _ -> None)
-    (fun () -> Cannot_serialize_error)
+    (fun () -> Cannot_serialize_error) ;
+  
+  register_error_kind
+    `Temporary
+    ~id:"scriptRejectedRuntimeError"
+    ~title: "Script failed (runtime script error)"
+    ~description: "A FAILWITH instruction was reached"
+    (obj3
+       (req "location" Script.location_encoding)
+       (req "with" Script.expr_encoding)
+       (opt "trace" trace_encoding))
+    (function Reject (loc, v, trace) -> Some (loc, v, trace) | _ -> None)
+    (fun (loc, v, trace) -> Reject (loc, v, trace));
+  (* Overflow *)
+  register_error_kind
+    `Temporary
+    ~id:"scriptOverflowRuntimeError"
+    ~title: "Script failed (overflow error)"
+    ~description: "A FAIL instruction was reached due to the detection of an overflow"
+    (obj2
+       (req "location" Script.location_encoding)
+       (opt "trace" trace_encoding))
+    (function Overflow (loc, trace) -> Some (loc, trace) | _ -> None)
+    (fun (loc, trace) -> Overflow (loc, trace));
+  (* Runtime contract error *)
+  register_error_kind
+    `Temporary
+    ~id:"scriptRuntimeError"
+    ~title: "Script runtime error"
+    ~description: "Toplevel error for all runtime script errors"
+    (obj2
+       (req "contractHandle" Contract.encoding)
+       (req "contractCode" Script.expr_encoding))
+    (function
+      | Runtime_contract_error (contract, expr) ->
+          Some (contract, expr)
+      | _ -> None)
+    (fun (contract, expr) ->
+       Runtime_contract_error (contract, expr)) ;
+  (* Bad contract parameter *)
+  register_error_kind
+    `Permanent
+    ~id:"badContractParameter"
+    ~title:"Contract supplied an invalid parameter"
+    ~description:"Either no parameter was supplied to a contract with \
+                  a non-unit parameter type, a non-unit parameter was \
+                  passed to an account, or a parameter was supplied of \
+                  the wrong type"
+    Data_encoding.(obj1 (req "contract" Contract.encoding))
+    (function Bad_contract_parameter c -> Some c | _ -> None)
+    (fun c -> Bad_contract_parameter c) ;
+  (* Cannot serialize log *)
+  register_error_kind
+    `Temporary
+    ~id:"cannotSerializeLog"
+    ~title:"Not enough gas to serialize execution trace"
+    ~description:"Execution trace with stacks was to big to be serialized with \
+                  the provided gas"
+    Data_encoding.empty
+    (function Cannot_serialize_log -> Some () | _ -> None)
+    (fun () -> Cannot_serialize_log) ;
+  (* Cannot serialize failure *)
+  register_error_kind
+    `Temporary
+    ~id:"cannotSerializeFailure"
+    ~title:"Not enough gas to serialize argument of FAILWITH"
+    ~description:"Argument of FAILWITH was too big to be serialized with \
+                  the provided gas"
+    Data_encoding.empty
+    (function Cannot_serialize_failure -> Some () | _ -> None)
+    (fun () -> Cannot_serialize_failure) ;
+  (* Cannot serialize storage *)
+  register_error_kind
+    `Temporary
+    ~id:"cannotSerializeStorage"
+    ~title:"Not enough gas to serialize execution storage"
+    ~description:"The returned storage was too big to be serialized with \
+                  the provided gas"
+    Data_encoding.empty
+    (function Cannot_serialize_storage -> Some () | _ -> None)
+    (fun () -> Cannot_serialize_storage)

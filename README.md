@@ -20,7 +20,8 @@ Todos:
 - include license in comments on all files
 - include mli files for most interfaces
 - Bigmap diff taken out of execution (I think this implies that storage to maps doesn't work)
-
+    - big maps included in execution
+- remove printing of errors when they are exepcted for tests. 
 ## Optional Desirables
 
 - Converting ocaml arguments to parameters

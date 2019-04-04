@@ -9,39 +9,18 @@ open Script_ir_translator
 open Script_ir_nodes
 open Error_registration
 
-type execution_trace =
-  (Script.location * Gas.t * (Script.expr * string option) list) list
-
 type 'tys stack =
   | Item : 'ty * 'rest stack -> ('ty * 'rest) stack
   | Empty : end_of_stack stack
 
 
+type execution_trace = Execution_context.execution_trace
+
 module Interp_costs = Michelson_v1_gas.Cost_of
 
 let fresh_internal_nonce c = ok (c, 0)
 type ex_descr_stack = Ex_descr_stack : (('a, 'b) descr * 'a stack) -> ex_descr_stack
-
-type error += Reject of Script.location * Script.expr * execution_trace option
-type error += Overflow of Script.location * execution_trace option
-type error += Runtime_contract_error : Contract.t * Script.expr -> error
-type error += Bad_contract_parameter of Contract.t (* `Permanent *)
-type error += Cannot_serialize_log
-type error += Cannot_serialize_failure
-type error += Cannot_serialize_storage
-
-let () =
-  register_error_kind
-    `Permanent
-    ~id:"badContractParameter"
-    ~title:"Contract supplied an invalid parameter"
-    ~description:"Either no parameter was supplied to a contract with \
-                  a non-unit parameter type, a non-unit parameter was \
-                  passed to an account, or a parameter was supplied of \
-                  the wrong type"
-    Data_encoding.(obj1 (req "contract" Contract.encoding))
-    (function Bad_contract_parameter c -> Some c | _ -> None)
-    (fun c -> Bad_contract_parameter c) ; ()
+    
 
 let unparse_stack ctxt (stack, stack_ty) =
   (* We drop the gas limit as this function is only used for debugging/errors. *)
