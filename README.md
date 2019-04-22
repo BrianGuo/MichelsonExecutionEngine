@@ -1,6 +1,6 @@
-# micheltest
+# Michelson Execution Engine
 
-Testing framework for michelson smart-contracts using OCaml.
+Execution Engine for michelson smart-contracts using OCaml.
 
 Todos:
 

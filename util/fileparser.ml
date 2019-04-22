@@ -59,7 +59,7 @@ let get_initial_program context toplevel_path (execution_context : Execution_con
       Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_type in
     let (Ex_ty storage_type, _) =
       force_ok ~msg:"parse storage ty" @@
-      parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
+      parse_storage_ty context storage_type in
     let param_type_full = Pair_t ((param_type, None, None),
                                   (storage_type, None, None), None) in
     let ret_type_full =
@@ -91,7 +91,7 @@ let get_initial_typed_program :
       @@ Script_ir_translator.ty_eq context param_type claimed_param_type in
     let (Ex_ty storage_type, _) =
       force_ok ~msg:"parse storage ty" @@
-      parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
+      parse_storage_ty context storage_type in
     let _ = Misc.force_ok ~msg:"actual storage type not equal to claimed storage type" 
     @@ Script_ir_translator.ty_eq context storage_type claimed_storage_type in
     let param_type_full = Pair_t ((claimed_param_type, None, None),

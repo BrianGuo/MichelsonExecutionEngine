@@ -66,9 +66,9 @@ let init_contracts n ctxt =
 let initialize_account_balance ~index ~balance ctxt =
   let bindings = Storage_map_mod.bindings ctxt.storage_map in
   let contract_hash = fst @@ List.nth bindings index in
-  let update_balance_fun old_balance = 
-    match old_balance with
-    | Some _ -> Some balance
+  let update_balance_fun old_storage = 
+    match old_storage with
+    | Some storage -> Some {storage with balance}
     | None -> None 
   in
   {ctxt with storage_map = Storage_map_mod.update contract_hash update_balance_fun ctxt.storage_map }

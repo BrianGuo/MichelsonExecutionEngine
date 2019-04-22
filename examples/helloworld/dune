@@ -1,4 +1,4 @@
 (executable
   (name helloworld)
-  (libraries lib
+  (libraries tezos-execution-engine
               ounit))

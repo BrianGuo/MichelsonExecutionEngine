@@ -1,4 +1,4 @@
-open Lib
+open Tezos_execution_engine
 open Execution_context
 open Types
 open OUnit

@@ -1,4 +1,4 @@
 (executable
   (name add_one)
-  (libraries lib
+  (libraries tezos-execution-engine
             ounit))

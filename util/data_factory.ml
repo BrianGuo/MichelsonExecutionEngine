@@ -420,7 +420,8 @@ let union_right :
 
 let empty_map :
   type a.
-  key:a comparable_ty -> (a, 'b) map = 
+  key:(a comparable_ty)
+   -> (a, 'b) map = 
   fun ~key ->
   empty_map key
 
@@ -429,4 +430,24 @@ let empty_set :
   key:a comparable_ty -> a set =
   fun ~key ->
   empty_set key
-  
+
+let empty_big_map key value =
+  let map = empty_map ~key in
+  {
+    diff = map;
+    key_type = ty_of_comparable_ty key;
+    value_type = value;
+  }
+
+let map_update :
+  type key value. key -> value option -> (key, value) map -> (key, value) map 
+  = fun k v map ->
+  Script_ir_translator.map_update k v map
+
+let big_map_update :
+  type key value. key -> value option -> (key, value) big_map -> (key, value) big_map 
+  = fun k v big_map ->
+  {
+    big_map with diff = Script_ir_translator.map_set k v big_map.diff;
+  }
+    

@@ -1,6 +1,6 @@
 (library
-    (name lib)
-    (public_name lib)
+    (name tezos_execution_engine)
+    (public_name tezos-execution-engine)
     (libraries lwt
                 tezos-micheline
                 tezos-error-monad

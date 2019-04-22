@@ -1,4 +1,4 @@
 (executable
   (name accounts)
-  (libraries lib
+  (libraries tezos-execution-engine
               ounit))

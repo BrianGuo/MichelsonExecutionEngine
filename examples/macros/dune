@@ -1,4 +1,4 @@
 (executable
   (name assert_cmpeq)
-  (libraries lib
+  (libraries tezos-execution-engine
               ounit))

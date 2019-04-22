@@ -1,0 +1,17 @@
+opam-version: "2.0.1"
+maintainer: "brian@tqgroup.io"
+authors: ["Brian Guo"]
+homepage: "https://github.com/BrianGuo/MichelsonExecutionEngine"
+bug-reports: "https://github.com/BrianGuo/MichelsonExecutionEngine/issues"
+doc: "https://github.com/BrianGuo/MichelsonExecutionEngine/wiki"
+build: [
+  ["dune" "build"]
+]
+depends: [
+  "ocaml" {>= "4.02.3"}
+  "dune" {build}
+  "alcotest" {with-test & >= "0.8.5"}
+]
+
+synopsis:
+An Execution Engine for executing Michelson smart contracts in OCaml

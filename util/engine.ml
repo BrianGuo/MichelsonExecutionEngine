@@ -105,7 +105,7 @@ let get_toplevel_and_execute context toplevel_path execution_context =
       Script_ir_translator.parse_ty context ~allow_big_map:false ~allow_operation:false param_type in
     let (Ex_ty storage_type, _) =
       force_ok ~msg:"parse storage ty" @@
-      parse_ty context ~allow_big_map:false ~allow_operation:false storage_type in
+      parse_storage_ty context storage_type in
     let param_type_full = Pair_t ((param_type, None, None),
                                   (storage_type, None, None), None) in
     let ret_type_full =

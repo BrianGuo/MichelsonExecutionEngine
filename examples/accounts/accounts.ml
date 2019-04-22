@@ -1,7 +1,6 @@
-open Lib
+open Tezos_execution_engine
 open Execution_context
 open Types
-open Printer
 open OUnit
 
 let () = Error_registration.register();
@@ -33,5 +32,3 @@ let () = execute_directly_using_engine |>
   fun ((operations_list, storage), _) ->
     assert_equal (List.length operations_list) 0;
     Printer.print_data Environment.storage_type storage 
-
-
