@@ -10,6 +10,20 @@ build: [
 depends: [
   "ocaml" {>= "4.02.3"}
   "dune" {build}
+  "base"
+  "bigstring"
+  "cohttp-lwt-unix"
+  "cstruct"
+  "ezjsonm"
+  "hex"
+  "js_of_ocaml"
+  "lwt"
+  "ocplib-endian"
+  "re"
+  "stdio"
+  "uri"
+  "uutf"
+  "zarith"
 ]
 
 synopsis:
