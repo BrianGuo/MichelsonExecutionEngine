@@ -8,7 +8,7 @@ build: [
   ["dune" "build"]
 ]
 depends: [
-  "ocaml" {>= "4.02.3"}
+  "ocaml" {= "4.06.1"}
   "dune" {build}
   "base"
   "bignum"
@@ -18,8 +18,8 @@ depends: [
   "ezjsonm"
   "hex"
   "js_of_ocaml"
-  "lwt"
-  "lwt.log"
+  "lwt" {= "3.3.0"}
+  "lwt_log"
   "ocplib-endian"
   "re"
   "stdio"
