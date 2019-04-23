@@ -6,12 +6,7 @@ bug-reports: "https://github.com/BrianGuo/MichelsonExecutionEngine/issues"
 doc: "https://github.com/BrianGuo/MichelsonExecutionEngine/wiki"
 name: "tezos_execution_engine"
 build: [
-  ["dune" "build" "dependencies/vendors/ocaml-blake2"]
-  ["dune" "build" "dependencies/vendors/ocaml-hacl"] 
-  ["dune" "build" "dependencies/vendors/ocaml-secp256k1"]
-  ["dune" "build" "dependencies/vendors/ocaml-uecc"]
-  ["dune" "build" "dependencies/vendors/ocplib-json-typed"]
-  ["dune" "build" "-p" "hacl,blake2,secp256k1,uecc,ocplib-json-typed,ocplib-json-typed-bson,ocplib-json-typed-browser,tezos-stdlib,tezos-crypto,tezos-error-monad,tezos-data-encoding,tezos-micheline,tezos_execution_engine"] 
+  ["dune" "build" "-p" name]
 ]
 depends: [
   "ocaml" {= "4.06.1"}
