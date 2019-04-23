@@ -30,6 +30,7 @@ depends: [
   "ocplib-json-typed"
   "re"
   "stdio"
+  "tezos-stdlib"
   "uri"
   "uutf"
   "zarith"
