@@ -21,6 +21,7 @@ depends: [
   "js_of_ocaml"
   "lwt" {= "3.3.0"}
   "lwt_log"
+  "ocaml-migrate-parsetree" {= 1.2.0}
   "ocplib-endian"
   "ocplib-json-typed"
   "re"
