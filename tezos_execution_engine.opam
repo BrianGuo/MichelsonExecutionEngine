@@ -6,6 +6,7 @@ bug-reports: "https://github.com/BrianGuo/MichelsonExecutionEngine/issues"
 doc: "https://github.com/BrianGuo/MichelsonExecutionEngine/wiki"
 name: "tezos_execution_engine"
 build: [
+  ["dune" "build" "dependencies/vendors/ocaml-blake2"]
   ["dune" "build"] 
 ]
 depends: [
