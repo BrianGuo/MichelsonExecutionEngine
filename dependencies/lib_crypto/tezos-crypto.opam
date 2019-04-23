@@ -11,8 +11,6 @@ depends: [
   "tezos-stdlib"
   "tezos-data-encoding"
   "tezos-error-monad"
-  "tezos-rpc"
-  "tezos-clic"
   "lwt"
   "blake2"
   "hacl"
