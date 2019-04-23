@@ -6,7 +6,7 @@ bug-reports: "https://github.com/BrianGuo/MichelsonExecutionEngine/issues"
 doc: "https://github.com/BrianGuo/MichelsonExecutionEngine/wiki"
 name: "tezos_execution_engine"
 build: [
-  ["dune" "build" "-p" name]
+  ["dune" "build"]
 ]
 depends: [
   "ocaml" {= "4.06.1"}
