@@ -7,6 +7,10 @@ doc: "https://github.com/BrianGuo/MichelsonExecutionEngine/wiki"
 name: "tezos_execution_engine"
 build: [
   ["dune" "build" "dependencies/vendors/ocaml-blake2"]
+  ["dune" "build" "dependencies/vendors/ocaml-hacl"] 
+  ["dune" "build" "dependencies/vendors/ocaml-secp256k1"]
+  ["dune" "build" "dependencies/vendors/ocaml-uecc"]
+  ["dune" "build" "dependencies/vendors/ocplib-json-typed"]
   ["dune" "build"] 
 ]
 depends: [
