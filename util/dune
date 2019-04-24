@@ -8,6 +8,5 @@
                 tezos-data-encoding
                 ocplib-json-typed
                 cohttp-lwt-unix
-                bignum.bigint
                 tezos-crypto
                 ))
