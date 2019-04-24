@@ -10,7 +10,7 @@ build: [
 ]
 depends: [
   "ocaml"
-  "dune"
+  "dune" {= "1.9.1"}
   "base"
   "bigstring"
   "cohttp-lwt-unix"
